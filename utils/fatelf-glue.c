@@ -117,7 +117,7 @@ static void xlseek(const char *fname, const int fd,
 static uint64_t xcopyfile(const char *in, const int infd,
                       const char *out, const int outfd)
 {
-    // !!! FIXME: use sendfile() on Linux.
+    // !!! FIXME: use sendfile() on Linux (if it'll handle non-socket fd's).
     static uint8_t buf[256 * 1024];
     uint64_t retval = 0;
     ssize_t rc = 0;
