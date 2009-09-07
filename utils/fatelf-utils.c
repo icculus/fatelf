@@ -136,9 +136,9 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
     info->abi = (uint16_t) buf[7];
     info->abi_version = (uint16_t) buf[8];
     if (buf[5] == 0)  // bigendian
-        info->cpu = (((uint32_t)buf[18]) << 8) | (((uint32_t)buf[19]));
+        info->machine = (((uint32_t)buf[18]) << 8) | (((uint32_t)buf[19]));
     else if (buf[5] == 1)  // littleendian
-        info->cpu = (((uint32_t)buf[19]) << 8) | (((uint32_t)buf[18]));
+        info->machine = (((uint32_t)buf[19]) << 8) | (((uint32_t)buf[18]));
     else
         xfail("Unexpected data encoding in '%s'", fname);
 } // xread_elf_header
@@ -235,7 +235,7 @@ void xwrite_fatelf_header(const char *fname, const int fd,
     {
         ptr = putui16(ptr, header->binaries[i].abi);
         ptr = putui16(ptr, header->binaries[i].abi_version);
-        ptr = putui32(ptr, header->binaries[i].cpu);
+        ptr = putui32(ptr, header->binaries[i].machine);
         ptr = putui64(ptr, header->binaries[i].offset);
     } // for
 
@@ -284,7 +284,7 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     {
         ptr = getui16(ptr, &header->binaries[i].abi);
         ptr = getui16(ptr, &header->binaries[i].abi_version);
-        ptr = getui32(ptr, &header->binaries[i].cpu);
+        ptr = getui32(ptr, &header->binaries[i].machine);
         ptr = getui64(ptr, &header->binaries[i].offset);
     } // for
 

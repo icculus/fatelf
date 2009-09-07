@@ -43,7 +43,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         for (j = 0; j < i; j++)
         {
             const FATELF_binary_info *other = &header->binaries[j];
-            const int same = (other->cpu == info->cpu) &&
+            const int same = (other->machine == info->machine) &&
                              (other->abi == info->abi) &&
                              (other->abi_version == info->abi_version);
             if (same)

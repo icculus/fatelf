@@ -21,13 +21,13 @@ static int fatelf_info(const char *fname)
     for (i = 0; i < header->num_binaries; i++)
     {
         const FATELF_binary_info *bin = &header->binaries[i];
-        const fatelf_machine_info *machine = get_machine_by_id(bin->cpu);
+        const fatelf_machine_info *machine = get_machine_by_id(bin->machine);
         const fatelf_abi_info *abi = get_abi_by_id(bin->abi);
         printf(" - ABI %u (%s%s%s) ver %u, mach %u (%s%s%s), off %llu\n",
                 (unsigned int) bin->abi, abi ? abi->name : "???",
                 abi ? ": " : "", abi ? abi->desc : "",
                 (unsigned int) bin->abi_version,
-                (unsigned int) bin->cpu, machine ? machine->name : "???",
+                (unsigned int) bin->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "",
                 (unsigned long long) bin->offset);
     } // for
