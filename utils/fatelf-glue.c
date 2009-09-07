@@ -13,7 +13,7 @@
 static int fatelf_glue(const char *out, const char **bins, const int bincount)
 {
     int i = 0;
-    const size_t struct_size = header_size(bincount);
+    const size_t struct_size = fatelf_header_size(bincount);
     FATELF_header *header = (FATELF_header *) xmalloc(struct_size);
     const int outfd = xopen(out, O_WRONLY | O_CREAT | O_TRUNC, 0755);
     uint64_t offset = FATELF_DISK_FORMAT_SIZE(bincount);

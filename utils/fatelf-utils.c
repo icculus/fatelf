@@ -158,6 +158,12 @@ static void xread_elf_header(const char *fname, const int fd,
 } // xread_elf_header
 
 
+static inline size_t fatelf_header_size(const int bincount)
+{
+    return (sizeof (FATELF_header) + (sizeof (FATELF_binary_info) * bincount));
+} // fatelf_header_size
+
+
 // Write a native uint16_t to a buffer in littleendian format.
 static inline uint8_t *putui16(uint8_t *ptr, const uint16_t val)
 {
@@ -193,6 +199,40 @@ static inline uint8_t *putui64(uint8_t *ptr, const uint64_t val)
 } // putui64
 
 
+// Read a littleendian uint16_t from a buffer in native format.
+static inline uint8_t *getui16(uint8_t *ptr, uint16_t *val)
+{
+    *val = ( (((uint16_t) ptr[0]) << 0) | (((uint16_t) ptr[1]) << 8) );
+    return ptr + sizeof (*val);
+} // getui16
+
+
+// Read a littleendian uint32_t from a buffer in native format.
+static inline uint8_t *getui32(uint8_t *ptr, uint32_t *val)
+{
+    *val = ( (((uint32_t) ptr[0]) << 0)  |
+             (((uint32_t) ptr[1]) << 8)  |
+             (((uint32_t) ptr[2]) << 16) |
+             (((uint32_t) ptr[3]) << 24) );
+    return ptr + sizeof (*val);
+} // getui32
+
+
+// Read a littleendian uint64_t from a buffer in native format.
+static inline uint8_t *getui64(uint8_t *ptr, uint64_t *val)
+{
+    *val = ( (((uint64_t) ptr[0]) << 0)  |
+             (((uint64_t) ptr[1]) << 8)  |
+             (((uint64_t) ptr[2]) << 16) |
+             (((uint64_t) ptr[3]) << 24) |
+             (((uint64_t) ptr[4]) << 32) |
+             (((uint64_t) ptr[5]) << 40) |
+             (((uint64_t) ptr[6]) << 48) |
+             (((uint64_t) ptr[7]) << 56) );
+    return ptr + sizeof (*val);
+} // getui64
+
+
 static void xwrite_fatelf_header(const char *fname, const int fd,
                                  const FATELF_header *header)
 {
@@ -221,12 +261,53 @@ static void xwrite_fatelf_header(const char *fname, const int fd,
     free(buf);
 } // xwrite_fatelf_header
 
-
-// Return enough bytes to definitely cover both memory and on-disk format.
-static inline size_t header_size(const int bincount)
+// don't forget to free() the returned pointer!
+static FATELF_header *xread_fatelf_header(const char *fname, const int fd)
 {
-    return (sizeof (FATELF_header) + (sizeof (FATELF_binary_info) * bincount));
-} // header_size
+    FATELF_header *header = NULL;
+    uint8_t buf[8];
+    uint8_t *fullbuf = NULL;
+    uint8_t *ptr = buf;
+    uint32_t magic = 0;
+    uint16_t version = 0;
+    uint16_t bincount = 0;
+    size_t buflen = 0;
+    int i = 0;
+
+    xlseek(fname, fd, 0, SEEK_SET);  // just in case.
+    xread(fname, fd, buf, sizeof (buf), 1);
+    ptr = getui32(ptr, &magic);
+    ptr = getui16(ptr, &version);
+    ptr = getui16(ptr, &bincount);
+
+    if (magic != FATELF_MAGIC)
+        fail("'%s' is not a FatELF binary.", fname);
+    else if (version != 1)
+        fail("'%s' uses an unknown FatELF version.", fname);
+    
+    buflen = FATELF_DISK_FORMAT_SIZE(bincount) - sizeof (buf);
+    ptr = fullbuf = (uint8_t *) xmalloc(buflen);
+    xread(fname, fd, fullbuf, buflen, 1);
+
+    header = (FATELF_header *) xmalloc(fatelf_header_size(bincount));
+    header->magic = magic;
+    header->version = version;
+    header->num_binaries = bincount;
+
+    for (i = 0; i < bincount; i++)
+    {
+        ptr = getui16(ptr, &header->binaries[i].abi);
+        ptr = getui16(ptr, &header->binaries[i].abi_version);
+        ptr = getui32(ptr, &header->binaries[i].cpu);
+        ptr = getui64(ptr, &header->binaries[i].offset);
+    } // for
+
+    assert(ptr == (fullbuf + buflen));
+
+    free(fullbuf);
+    return header;
+} // xread_fatelf_header
+
 
 static uint64_t align_to_page(const uint64_t offset)
 {
@@ -234,4 +315,7 @@ static uint64_t align_to_page(const uint64_t offset)
     const size_t overflow = (offset % pagesize);
     return overflow ? (offset + (pagesize - overflow)) : offset;
 } // align_to_page
+
+
+// end of fatelf-utils.c ...
 
