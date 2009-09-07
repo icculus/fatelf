@@ -29,7 +29,7 @@ extern const char *unlink_on_xfail;
 
 typedef struct fatelf_machine_info
 {
-    uint32_t id;
+    uint16_t id;
     const char *name;
     const char *desc;
 } fatelf_machine_info;
@@ -85,7 +85,7 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd);
 // Align a value to the page size.
 uint64_t align_to_page(const uint64_t offset);
 
-const fatelf_machine_info *get_machine_by_id(const uint32_t id);
+const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);
 const fatelf_abi_info *get_abi_by_id(const uint16_t id);
 const fatelf_abi_info *get_abi_by_name(const char *name);

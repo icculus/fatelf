@@ -136,9 +136,9 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
     info->abi = (uint16_t) buf[7];
     info->abi_version = (uint16_t) buf[8];
     if (buf[5] == 0)  // bigendian
-        info->machine = (((uint32_t)buf[18]) << 8) | (((uint32_t)buf[19]));
+        info->machine = (((uint16_t)buf[18]) << 8) | (((uint16_t)buf[19]));
     else if (buf[5] == 1)  // littleendian
-        info->machine = (((uint32_t)buf[19]) << 8) | (((uint32_t)buf[18]));
+        info->machine = (((uint16_t)buf[19]) << 8) | (((uint16_t)buf[18]));
     else
         xfail("Unexpected data encoding in '%s'", fname);
 } // xread_elf_header
@@ -235,7 +235,8 @@ void xwrite_fatelf_header(const char *fname, const int fd,
     {
         ptr = putui16(ptr, header->binaries[i].abi);
         ptr = putui16(ptr, header->binaries[i].abi_version);
-        ptr = putui32(ptr, header->binaries[i].machine);
+        ptr = putui16(ptr, header->binaries[i].machine);
+        ptr = putui16(ptr, header->binaries[i].reserved0);
         ptr = putui64(ptr, header->binaries[i].offset);
     } // for
 
@@ -284,7 +285,8 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     {
         ptr = getui16(ptr, &header->binaries[i].abi);
         ptr = getui16(ptr, &header->binaries[i].abi_version);
-        ptr = getui32(ptr, &header->binaries[i].machine);
+        ptr = getui16(ptr, &header->binaries[i].machine);
+        ptr = getui16(ptr, &header->binaries[i].reserved0);
         ptr = getui64(ptr, &header->binaries[i].offset);
     } // for
 
@@ -435,7 +437,7 @@ static const fatelf_abi_info abis[] =
 };
 
 
-const fatelf_machine_info *get_machine_by_id(const uint32_t id)
+const fatelf_machine_info *get_machine_by_id(const uint16_t id)
 {
     int i;
     for (i = 0; i < (sizeof (machines) / sizeof (machines[0])); i++)

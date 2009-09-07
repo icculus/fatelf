@@ -22,7 +22,8 @@ typedef struct FATELF_binary_info
 {
     uint16_t abi;
     uint16_t abi_version;
-    uint32_t machine;
+    uint16_t machine;
+    uint16_t reserved0;
     uint64_t offset;
 } FATELF_binary_info;
 
