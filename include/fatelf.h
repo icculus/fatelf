@@ -18,7 +18,7 @@
 #define FATELF_DISK_FORMAT_SIZE(bins) (8 + (24 * (bins)))
 
 /* Values on disk are always littleendian, and align like Elf64. */
-typedef struct FATELF_binary_info
+typedef struct FATELF_record
 {
     uint16_t osabi;
     uint16_t osabi_version;
@@ -26,16 +26,16 @@ typedef struct FATELF_binary_info
     uint16_t reserved0;
     uint64_t offset;
     uint64_t size;
-} FATELF_binary_info;
+} FATELF_record;
 
 /* Values on disk are always littleendian, and align like Elf64. */
 typedef struct FATELF_header
 {
     uint32_t magic;  /* always FATELF_MAGIC */
     uint16_t version; /* latest is always FATELF_FORMAT_VERSION */
-    uint8_t num_binaries;
+    uint8_t num_records;
     uint8_t reserved0;
-    FATELF_binary_info binaries[];
+    FATELF_record records[];
 } FATELF_header;
 
 #endif

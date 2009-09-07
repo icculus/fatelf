@@ -125,7 +125,7 @@ uint64_t xcopyfile(const char *in, const int infd,
 } // xcopyfile
 
 
-void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
+void xread_elf_header(const char *fname, const int fd, FATELF_record *record)
 {
     const uint8_t magic[4] = { 0x7F, 0x45, 0x4C, 0x46 };
     uint8_t buf[20];  // we only care about the first 20 bytes.
@@ -133,12 +133,12 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
     xread(fname, fd, buf, sizeof (buf), 1);
     if (memcmp(magic, buf, sizeof (magic)) != 0)
         xfail("'%s' is not an ELF binary");
-    info->osabi = (uint16_t) buf[7];
-    info->osabi_version = (uint16_t) buf[8];
+    record->osabi = (uint16_t) buf[7];
+    record->osabi_version = (uint16_t) buf[8];
     if (buf[5] == 0)  // bigendian
-        info->machine = (((uint16_t)buf[18]) << 8) | (((uint16_t)buf[19]));
+        record->machine = (((uint16_t)buf[18]) << 8) | (((uint16_t)buf[19]));
     else if (buf[5] == 1)  // littleendian
-        info->machine = (((uint16_t)buf[19]) << 8) | (((uint16_t)buf[18]));
+        record->machine = (((uint16_t)buf[19]) << 8) | (((uint16_t)buf[18]));
     else
         xfail("Unexpected data encoding in '%s'", fname);
 } // xread_elf_header
@@ -146,7 +146,7 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
 
 size_t fatelf_header_size(const int bincount)
 {
-    return (sizeof (FATELF_header) + (sizeof (FATELF_binary_info) * bincount));
+    return (sizeof (FATELF_header) + (sizeof (FATELF_record) * bincount));
 } // fatelf_header_size
 
 
@@ -238,24 +238,24 @@ static inline uint8_t *getui64(uint8_t *ptr, uint64_t *val)
 void xwrite_fatelf_header(const char *fname, const int fd,
                           const FATELF_header *header)
 {
-    const size_t buflen = FATELF_DISK_FORMAT_SIZE(header->num_binaries);
+    const size_t buflen = FATELF_DISK_FORMAT_SIZE(header->num_records);
     uint8_t *buf = (uint8_t *) xmalloc(buflen);
     uint8_t *ptr = buf;
     int i;
 
     ptr = putui32(ptr, header->magic);
     ptr = putui16(ptr, header->version);
-    ptr = putui8(ptr, header->num_binaries);
+    ptr = putui8(ptr, header->num_records);
     ptr = putui8(ptr, header->reserved0);
 
-    for (i = 0; i < header->num_binaries; i++)
+    for (i = 0; i < header->num_records; i++)
     {
-        ptr = putui16(ptr, header->binaries[i].osabi);
-        ptr = putui16(ptr, header->binaries[i].osabi_version);
-        ptr = putui16(ptr, header->binaries[i].machine);
-        ptr = putui16(ptr, header->binaries[i].reserved0);
-        ptr = putui64(ptr, header->binaries[i].offset);
-        ptr = putui64(ptr, header->binaries[i].size);
+        ptr = putui16(ptr, header->records[i].osabi);
+        ptr = putui16(ptr, header->records[i].osabi_version);
+        ptr = putui16(ptr, header->records[i].machine);
+        ptr = putui16(ptr, header->records[i].reserved0);
+        ptr = putui64(ptr, header->records[i].offset);
+        ptr = putui64(ptr, header->records[i].size);
     } // for
 
     assert(ptr == (buf + buflen));
@@ -299,17 +299,17 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     header = (FATELF_header *) xmalloc(fatelf_header_size(bincount));
     header->magic = magic;
     header->version = version;
-    header->num_binaries = bincount;
+    header->num_records = bincount;
     header->reserved0 = reserved0;
 
     for (i = 0; i < bincount; i++)
     {
-        ptr = getui16(ptr, &header->binaries[i].osabi);
-        ptr = getui16(ptr, &header->binaries[i].osabi_version);
-        ptr = getui16(ptr, &header->binaries[i].machine);
-        ptr = getui16(ptr, &header->binaries[i].reserved0);
-        ptr = getui64(ptr, &header->binaries[i].offset);
-        ptr = getui64(ptr, &header->binaries[i].size);
+        ptr = getui16(ptr, &header->records[i].osabi);
+        ptr = getui16(ptr, &header->records[i].osabi_version);
+        ptr = getui16(ptr, &header->records[i].machine);
+        ptr = getui16(ptr, &header->records[i].reserved0);
+        ptr = getui64(ptr, &header->records[i].offset);
+        ptr = getui64(ptr, &header->records[i].size);
     } // for
 
     assert(ptr == (fullbuf + buflen));

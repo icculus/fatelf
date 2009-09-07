@@ -69,7 +69,7 @@ uint64_t xcopyfile(const char *in, const int infd,
                    const char *out, const int outfd);
 
 // read the parts of an ELF header we care about.
-void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *i);
+void xread_elf_header(const char *fname, const int fd, FATELF_record *rec);
 
 // How many bytes to allocate for a FATELF_header.
 size_t fatelf_header_size(const int bincount);

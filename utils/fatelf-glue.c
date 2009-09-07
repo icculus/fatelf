@@ -26,7 +26,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
 
     header->magic = FATELF_MAGIC;
     header->version = FATELF_FORMAT_VERSION;
-    header->num_binaries = bincount;
+    header->num_records = bincount;
 
     for (i = 0; i < bincount; i++)
     {
@@ -34,26 +34,26 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         const uint64_t binary_offset = align_to_page(offset);
         const char *fname = bins[i];
         const int fd = xopen(fname, O_RDONLY, 0755);
-        FATELF_binary_info *info = &header->binaries[i];
+        FATELF_record *record = &header->records[i];
 
-        info->offset = binary_offset;
-        xread_elf_header(fname, fd, info);
+        record->offset = binary_offset;
+        xread_elf_header(fname, fd, record);
 
         // make sure we don't have a duplicate target.
         for (j = 0; j < i; j++)
         {
-            const FATELF_binary_info *other = &header->binaries[j];
-            const int same = (other->machine == info->machine) &&
-                             (other->osabi == info->osabi) &&
-                             (other->osabi_version == info->osabi_version);
+            const FATELF_record *other = &header->records[j];
+            const int same = (other->machine == record->machine) &&
+                             (other->osabi == record->osabi) &&
+                             (other->osabi_version == record->osabi_version);
             if (same)
                 xfail("'%s' and '%s' are for the same target.", bins[j], fname);
         } // for
 
         // append this binary to the final file, padded to page alignment.
         xwrite_zeros(out, outfd, (size_t) (binary_offset - offset));
-        info->size = xcopyfile(fname, fd, out, outfd);
-        offset = binary_offset + info->size;
+        record->size = xcopyfile(fname, fd, out, outfd);
+        offset = binary_offset + record->size;
 
         // done with this binary!
         xclose(fname, fd);

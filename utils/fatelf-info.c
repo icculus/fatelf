@@ -16,24 +16,24 @@ static int fatelf_info(const char *fname)
     unsigned int i = 0;
 
     printf("%s: FatELF format version %d\n", fname, (int) header->version);
-    printf("%d binaries.\n", (int) header->num_binaries);
+    printf("%d records.\n", (int) header->num_records);
 
-    for (i = 0; i < header->num_binaries; i++)
+    for (i = 0; i < header->num_records; i++)
     {
-        const FATELF_binary_info *bin = &header->binaries[i];
-        const fatelf_machine_info *machine = get_machine_by_id(bin->machine);
-        const fatelf_osabi_info *osabi = get_osabi_by_id(bin->osabi);
+        const FATELF_record *rec = &header->records[i];
+        const fatelf_machine_info *machine = get_machine_by_id(rec->machine);
+        const fatelf_osabi_info *osabi = get_osabi_by_id(rec->osabi);
 
         printf("Binary at index #%d:\n", i);
         printf("  OSABI %u (%s%s%s) version %u,\n",
-                (unsigned int) bin->osabi, osabi ? osabi->name : "???",
+                (unsigned int) rec->osabi, osabi ? osabi->name : "???",
                 osabi ? ": " : "", osabi ? osabi->desc : "",
-                (unsigned int) bin->osabi_version);
+                (unsigned int) rec->osabi_version);
         printf("  Machine %u (%s%s%s)\n",
-                (unsigned int) bin->machine, machine ? machine->name : "???",
+                (unsigned int) rec->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "");
-        printf("  Offset %llu\n", (unsigned long long) bin->offset);
-        printf("  Size %llu\n", (unsigned long long) bin->size);
+        printf("  Offset %llu\n", (unsigned long long) rec->offset);
+        printf("  Size %llu\n", (unsigned long long) rec->size);
     } // for
 
     xclose(fname, fd);
