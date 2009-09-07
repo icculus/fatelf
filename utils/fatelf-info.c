@@ -13,10 +13,10 @@ static int fatelf_info(const char *fname)
 {
     const int fd = xopen(fname, O_RDONLY, 0755);
     FATELF_header *header = xread_fatelf_header(fname, fd);
-    uint16_t i = 0;
+    unsigned int i = 0;
 
-    printf("%s: FatELF format version %d\n", fname, header->version);
-    printf("%d binaries.\n", header->num_binaries);
+    printf("%s: FatELF format version %d\n", fname, (int) header->version);
+    printf("%d binaries.\n", (int) header->num_binaries);
 
     for (i = 0; i < header->num_binaries; i++)
     {

@@ -33,7 +33,8 @@ typedef struct FATELF_header
 {
     uint32_t magic;  /* always FATELF_MAGIC */
     uint16_t version; /* latest is always FATELF_FORMAT_VERSION */
-    uint16_t num_binaries;
+    uint8_t num_binaries;
+    uint8_t reserved0;
     FATELF_binary_info binaries[];
 } FATELF_header;
 

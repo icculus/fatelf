@@ -21,8 +21,8 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
 
     if (bincount == 0)
         xfail("Nothing to do.");
-    else if (bincount > 0xFFFF)
-        xfail("Too many binaries (max is %d).", 0xFFFF);
+    else if (bincount > 0xFF)
+        xfail("Too many binaries (max is 255).");
 
     header->magic = FATELF_MAGIC;
     header->version = FATELF_FORMAT_VERSION;

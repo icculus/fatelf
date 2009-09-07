@@ -150,6 +150,14 @@ size_t fatelf_header_size(const int bincount)
 } // fatelf_header_size
 
 
+// Write a uint8_t to a buffer.
+static inline uint8_t *putui8(uint8_t *ptr, const uint8_t val)
+{
+    *(ptr++) = val;
+    return ptr + 1;
+} // putui8
+
+
 // Write a native uint16_t to a buffer in littleendian format.
 static inline uint8_t *putui16(uint8_t *ptr, const uint16_t val)
 {
@@ -183,6 +191,14 @@ static inline uint8_t *putui64(uint8_t *ptr, const uint64_t val)
     *(ptr++) = ((uint8_t) ((val >> 56) & 0xFF));
     return ptr;
 } // putui64
+
+
+// Read a uint8_t from a buffer.
+static inline uint8_t *getui8(uint8_t *ptr, uint8_t *val)
+{
+    *val = *ptr;
+    return ptr + sizeof (*val);
+} // getui8
 
 
 // Read a littleendian uint16_t from a buffer in native format.
@@ -229,7 +245,8 @@ void xwrite_fatelf_header(const char *fname, const int fd,
 
     ptr = putui32(ptr, header->magic);
     ptr = putui16(ptr, header->version);
-    ptr = putui16(ptr, header->num_binaries);
+    ptr = putui8(ptr, header->num_binaries);
+    ptr = putui8(ptr, header->reserved0);
 
     for (i = 0; i < header->num_binaries; i++)
     {
@@ -258,7 +275,8 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     uint8_t *ptr = buf;
     uint32_t magic = 0;
     uint16_t version = 0;
-    uint16_t bincount = 0;
+    uint8_t bincount = 0;
+    uint8_t reserved0 = 0;
     size_t buflen = 0;
     int i = 0;
 
@@ -266,7 +284,8 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     xread(fname, fd, buf, sizeof (buf), 1);
     ptr = getui32(ptr, &magic);
     ptr = getui16(ptr, &version);
-    ptr = getui16(ptr, &bincount);
+    ptr = getui8(ptr, &bincount);
+    ptr = getui8(ptr, &reserved0);
 
     if (magic != FATELF_MAGIC)
         xfail("'%s' is not a FatELF binary.", fname);
@@ -281,6 +300,7 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
     header->magic = magic;
     header->version = version;
     header->num_binaries = bincount;
+    header->reserved0 = reserved0;
 
     for (i = 0; i < bincount; i++)
     {
