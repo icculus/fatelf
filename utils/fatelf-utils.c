@@ -151,7 +151,7 @@ size_t fatelf_header_size(const int bincount)
 
 
 // Write a native uint16_t to a buffer in littleendian format.
-uint8_t *putui16(uint8_t *ptr, const uint16_t val)
+static inline uint8_t *putui16(uint8_t *ptr, const uint16_t val)
 {
     *(ptr++) = ((uint8_t) ((val >> 0) & 0xFF));
     *(ptr++) = ((uint8_t) ((val >> 8) & 0xFF));
@@ -160,7 +160,7 @@ uint8_t *putui16(uint8_t *ptr, const uint16_t val)
 
 
 // Write a native uint32_t to a buffer in littleendian format.
-uint8_t *putui32(uint8_t *ptr, const uint32_t val)
+static inline uint8_t *putui32(uint8_t *ptr, const uint32_t val)
 {
     *(ptr++) = ((uint8_t) ((val >> 0) & 0xFF));
     *(ptr++) = ((uint8_t) ((val >> 8) & 0xFF));
@@ -171,7 +171,7 @@ uint8_t *putui32(uint8_t *ptr, const uint32_t val)
 
 
 // Write a native uint64_t to a buffer in littleendian format.
-uint8_t *putui64(uint8_t *ptr, const uint64_t val)
+static inline uint8_t *putui64(uint8_t *ptr, const uint64_t val)
 {
     *(ptr++) = ((uint8_t) ((val >> 0) & 0xFF));
     *(ptr++) = ((uint8_t) ((val >> 8) & 0xFF));
@@ -186,7 +186,7 @@ uint8_t *putui64(uint8_t *ptr, const uint64_t val)
 
 
 // Read a littleendian uint16_t from a buffer in native format.
-uint8_t *getui16(uint8_t *ptr, uint16_t *val)
+static inline uint8_t *getui16(uint8_t *ptr, uint16_t *val)
 {
     *val = ( (((uint16_t) ptr[0]) << 0) | (((uint16_t) ptr[1]) << 8) );
     return ptr + sizeof (*val);
@@ -194,7 +194,7 @@ uint8_t *getui16(uint8_t *ptr, uint16_t *val)
 
 
 // Read a littleendian uint32_t from a buffer in native format.
-uint8_t *getui32(uint8_t *ptr, uint32_t *val)
+static inline uint8_t *getui32(uint8_t *ptr, uint32_t *val)
 {
     *val = ( (((uint32_t) ptr[0]) << 0)  |
              (((uint32_t) ptr[1]) << 8)  |
@@ -205,7 +205,7 @@ uint8_t *getui32(uint8_t *ptr, uint32_t *val)
 
 
 // Read a littleendian uint64_t from a buffer in native format.
-uint8_t *getui64(uint8_t *ptr, uint64_t *val)
+static inline uint8_t *getui64(uint8_t *ptr, uint64_t *val)
 {
     *val = ( (((uint64_t) ptr[0]) << 0)  |
              (((uint64_t) ptr[1]) << 8)  |

@@ -57,24 +57,6 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *i);
 // How many bytes to allocate for a FATELF_header.
 size_t fatelf_header_size(const int bincount);
 
-// Write a native uint16_t to a buffer in littleendian format.
-uint8_t *putui16(uint8_t *ptr, const uint16_t val);
-
-// Write a native uint32_t to a buffer in littleendian format.
-uint8_t *putui32(uint8_t *ptr, const uint32_t val);
-
-// Write a native uint64_t to a buffer in littleendian format.
-uint8_t *putui64(uint8_t *ptr, const uint64_t val);
-
-// Read a littleendian uint16_t from a buffer in native format.
-uint8_t *getui16(uint8_t *ptr, uint16_t *val);
-
-// Read a littleendian uint32_t from a buffer in native format.
-uint8_t *getui32(uint8_t *ptr, uint32_t *val);
-
-// Read a littleendian uint64_t from a buffer in native format.
-uint8_t *getui64(uint8_t *ptr, uint64_t *val);
-
 // Put FatELF header to disk. Will seek to 0 first.
 void xwrite_fatelf_header(const char *fname, const int fd,
                           const FATELF_header *header);
