@@ -303,16 +303,187 @@ uint64_t align_to_page(const uint64_t offset)
 } // align_to_page
 
 
-const char *abi_name_string(const uint16_t abitype)
+// !!! FIXME: these names/descs aren't set in stone.
+// List from: http://www.sco.com/developers/gabi/latest/ch4.eheader.html
+static const fatelf_machine_info machines[] =
 {
-    return "???";  // !!! FIXME
-} // abi_name_string
+    // MUST BE SORTED BY ID!
+    { 0, "none", "No machine" },
+    { 1, "m32", "AT&T WE 32100" },
+    { 2, "sparc", "SPARC" },
+    { 3, "386", "Intel 80386" },
+    { 4, "68k", "Motorola 68000" },
+    { 5, "88k", "Motorola 88000" },
+    { 7, "860", "Intel 80860" },
+    { 8, "mips", "MIPS I" },
+    { 9, "s370", "IBM System/370" },
+    { 10, "mips-rs3", "MIPS RS3000" },
+    { 15, "pa-risc", "Hewlett-Packard PA-RISC" },
+    { 17, "vpp500", "Fujitsu VPP500" },
+    { 18, "sparc32plus", "Enhanced instruction set SPARC" },
+    { 19, "960", "Intel 80960" },
+    { 20, "ppc", "PowerPC" },
+    { 21, "ppc64", "64-bit PowerPC" },
+    { 22, "s390", "IBM System/390" },
+    { 36, "v800", "NEC V800" },
+    { 37, "fr20", "Fujitsu FR20" },
+    { 38, "rh32", "TRW RH-32" },
+    { 39, "rce", "Motorola RCE" },
+    { 40, "arm", "Advanced RISC Machines ARM" },
+    { 41, "alpha", "Digital Alpha" },
+    { 42, "sh", "Hitachi SH" },
+    { 43, "sparcv9", "SPARC Version 9" },
+    { 44, "tricore", "Siemens Tricore embedded" },
+    { 45, "arc", "Argonaut RISC Core" },
+    { 46, "h8-300", "Hitachi H8/300" },
+    { 47, "h8-300h", "Hitachi H8/300H" },
+    { 48, "h8s", "Hitachi H8S" },
+    { 49, "h8-500", "Hitachi H8/500" },
+    { 50, "ia64", "Intel IA-64" },
+    { 51, "mipsx", "Stanford MIPS-X" },
+    { 52, "coldfire", "Motorola Coldfire" },
+    { 53, "m68hc12", "Motorola M68HC12" },
+    { 54, "mma", "Fujitsu MMA Multimedia Accelerator" },
+    { 55, "pcp", "Siemens PCP" },
+    { 56, "ncpu", "Sony nCPU embedded RISC" },
+    { 57, "ndr1", "Denso NDR1" },
+    { 58, "starcore", "Motorola Star*Core" },
+    { 59, "me16", "Toyota ME16" },
+    { 60, "st100", "STMicroelectronics ST100" },
+    { 61, "tinyj", "Advanced Logic Corp. TinyJ" },
+    { 62, "x86_64", "AMD x86-64" },
+    { 63, "pdsp", "Sony DSP" },
+    { 64, "pdp10", "Digital Equipment Corp. PDP-10" },
+    { 65, "pdp11", "Digital Equipment Corp. PDP-11" },
+    { 66, "fx66", "Siemens FX66" },
+    { 67, "st9plus", "STMicroelectronics ST9+" },
+    { 68, "st7", "STMicroelectronics ST7" },
+    { 69, "68hc16", "Motorola MC68HC16" },
+    { 70, "68hc11", "Motorola MC68HC11" },
+    { 70, "68hc11", "Motorola MC68HC11" },
+    { 71, "68hc08", "Motorola MC68HC08" },
+    { 72, "68hc05", "Motorola MC68HC05" },
+    { 73, "svx", "Silicon Graphics SVx" },
+    { 74, "st19", "STMicroelectronics ST19" },
+    { 75, "vax", "Digital VAX" },
+    { 76, "cris", "Axis Communications 32-bit embedded processor" },
+    { 77, "javelin", "Infineon Technologies 32-bit embedded processor" },
+    { 78, "firepath", "Element 14 64-bit DSP Processor" },
+    { 79, "zsp", "LSI Logic 16-bit DSP Processor" },
+    { 80, "mmix", "Donald Knuth's educational 64-bit processor" },
+    { 81, "huany", "Harvard University machine-independent object files" },
+    { 82, "prism", "SiTera Prism" },
+    { 83, "avr", "Atmel AVR" },
+    { 84, "fr30", "Fujitsu FR30" },
+    { 85, "d10v", "Mitsubishi D10V" },
+    { 86, "d30v", "Mitsubishi D30V" },
+    { 87, "v850", "NEC v850" },
+    { 88, "m32r", "Mitsubishi M32R" },
+    { 89, "mn10300", "Matsushita MN10300" },
+    { 90, "mn10200", "Matsushita MN10200" },
+    { 91, "pj", "picoJava" },
+    { 92, "openrisc", "OpenRISC" },
+    { 93, "arc_a5", "ARC Cores Tangent-A5" },
+    { 94, "xtensa", "Tensilica Xtensa" },
+    { 95, "videocore", "Alphamosaic VideoCore" },
+    { 96, "tmm_gpp", "Thompson Multimedia General Purpose Processor" },
+    { 97, "ns32k", "National Semiconductor 32000 series" },
+    { 98, "tpc", "Tenor Network TPC" },
+    { 99, "snp1k", "Trebia SNP 1000" },
+    { 100, "st200", "STMicroelectronics ST200" },
+    { 101, "ip2k", "Ubicom IP2xxx" },
+    { 102, "max", "MAX Processor" },
+    { 103, "cr", "National Semiconductor CompactRISC" },
+    { 104, "f2mc16", "Fujitsu F2MC16" },
+    { 105, "msp430", "Texas Instruments msp430" },
+    { 106, "blackfin", "Analog Devices Blackfin" },
+    { 107, "se_c33", "S1C33 Family of Seiko Epson processors" },
+    { 108, "sep", "Sharp embedded microprocessor" },
+    { 109, "arca", "Arca RISC Microprocessor" },
+    { 110, "unicore", "Microprocessor series from PKU-Unity Ltd. and MPRC of Peking University" },
+    { 0x9026, "alpha", "Digital Alpha" },  // linux headers use this.
+    { 0x9080, "v850", "NEC v850" },  // old tools use this, apparently.
+    { 0x9041, "m32r", "Mitsubishi M32R" },  // old tools use this, apparently.
+    { 0xA390, "s390", "IBM System/390" },  // legacy value.
+    { 0xBEEF, "mn10300", "Matsushita MN10300" },  // old tools.
+};
 
 
-const char *cpu_name_string(const uint32_t cputype)
+// !!! FIXME: these names/descs aren't set in stone.
+// List from: http://www.sco.com/developers/gabi/latest/ch4.eheader.html
+static const fatelf_abi_info abis[] =
 {
-    return "???";  // !!! FIXME
-} // cpu_name_string
+    // MUST BE SORTED BY ID!
+    { 0, "none", "No extensions or unspecified" },
+    { 1, "hpux", "Hewlett-Packard HP-UX" },
+    { 2, "netbsd", "NetBSD" },
+    { 6, "solaris", "Sun Solaris" },
+    { 7, "aix", "AIX" },
+    { 8, "irix", "IRIX" },
+    { 9, "freebsd", "FreeBSD" },
+    { 10, "tru64", "Compaq TRU64 UNIX" },
+    { 11, "modesto", "Novell Modesto" },
+    { 12, "openbsd", "Open BSD" },
+    { 13, "openvms", "Open VMS" },
+    { 14, "nsk", "Hewlett-Packard Non-Stop Kernel" },
+    { 15, "aros", "Amiga Research OS" },
+};
+
+
+const fatelf_machine_info *get_machine_by_id(const uint32_t id)
+{
+    int i;
+    for (i = 0; i < (sizeof (machines) / sizeof (machines[0])); i++)
+    {
+        if (machines[i].id == id)
+            return &machines[i];
+        else if (machines[i].id > id)
+            break;  // not found (sorted by id).
+    } // for
+
+    return NULL;
+} // get_machine_by_id
+
+
+const fatelf_machine_info *get_machine_by_name(const char *name)
+{
+    int i;
+    for (i = 0; i < (sizeof (machines) / sizeof (machines[0])); i++)
+    {
+        if (strcmp(machines[i].name, name) == 0)
+            return &machines[i];
+    } // for
+
+    return NULL;
+} // get_machine_by_name
+
+
+const fatelf_abi_info *get_abi_by_id(const uint16_t id)
+{
+    int i;
+    for (i = 0; i < (sizeof (abis) / sizeof (abis[0])); i++)
+    {
+        if (abis[i].id == id)
+            return &abis[i];
+        else if (abis[i].id > id)
+            break;  // not found (sorted by id).
+    } // for
+
+    return NULL;
+} // get_abi_by_id
+
+
+const fatelf_abi_info *get_abi_by_name(const char *name)
+{
+    int i;
+    for (i = 0; i < (sizeof (abis) / sizeof (abis[0])); i++)
+    {
+        if (strcmp(abis[i].name, name) == 0)
+            return &abis[i];
+    } // for
+
+    return NULL;
+} // get_abi_by_name
 
 
 void xfatelf_init(int argc, const char **argv)
