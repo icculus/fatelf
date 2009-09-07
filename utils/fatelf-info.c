@@ -24,7 +24,7 @@ static int fatelf_info(const char *fname)
         const fatelf_machine_info *machine = get_machine_by_id(bin->machine);
         const fatelf_abi_info *abi = get_abi_by_id(bin->abi);
 
-        printf("#%d:\n", i);
+        printf("Binary at index #%d:\n", i);
         printf("  ABI %u (%s%s%s) version %u,\n",
                 (unsigned int) bin->abi, abi ? abi->name : "???",
                 abi ? ": " : "", abi ? abi->desc : "",
