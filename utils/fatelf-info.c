@@ -13,23 +13,26 @@ static int fatelf_info(const char *fname)
 {
     const int fd = xopen(fname, O_RDONLY, 0755);
     FATELF_header *header = xread_fatelf_header(fname, fd);
-    int i = 0;
+    uint16_t i = 0;
 
     printf("%s: FatELF format version %d\n", fname, header->version);
-    printf("%d binaries:\n", header->num_binaries);
+    printf("%d binaries.\n", header->num_binaries);
 
     for (i = 0; i < header->num_binaries; i++)
     {
         const FATELF_binary_info *bin = &header->binaries[i];
         const fatelf_machine_info *machine = get_machine_by_id(bin->machine);
         const fatelf_abi_info *abi = get_abi_by_id(bin->abi);
-        printf(" - ABI %u (%s%s%s) ver %u, mach %u (%s%s%s), off %llu\n",
+
+        printf("#%d:\n", i);
+        printf("  ABI %u (%s%s%s) version %u,\n",
                 (unsigned int) bin->abi, abi ? abi->name : "???",
                 abi ? ": " : "", abi ? abi->desc : "",
-                (unsigned int) bin->abi_version,
+                (unsigned int) bin->abi_version);
+        printf("  Machine %u (%s%s%s)\n",
                 (unsigned int) bin->machine, machine ? machine->name : "???",
-                machine ? ": " : "", machine ? machine->desc : "",
-                (unsigned long long) bin->offset);
+                machine ? ": " : "", machine ? machine->desc : "");
+        printf("  Offset %llu\n", (unsigned long long) bin->offset);
     } // for
 
     xclose(fname, fd);
