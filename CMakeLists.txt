@@ -5,6 +5,7 @@ INCLUDE_DIRECTORIES(include)
 ADD_DEFINITIONS(-c99 -Wall -Werror)
 
 ADD_EXECUTABLE(fatelf-glue utils/fatelf-glue.c utils/fatelf-utils.c)
+ADD_EXECUTABLE(fatelf-info utils/fatelf-info.c utils/fatelf-utils.c)
 
 # end of CMakeLists.txt ...
 

@@ -303,6 +303,18 @@ uint64_t align_to_page(const uint64_t offset)
 } // align_to_page
 
 
+const char *abi_name_string(const uint16_t abitype)
+{
+    return "???";  // !!! FIXME
+} // abi_name_string
+
+
+const char *cpu_name_string(const uint32_t cputype)
+{
+    return "???";  // !!! FIXME
+} // cpu_name_string
+
+
 void xfatelf_init(int argc, const char **argv)
 {
     memset(zerobuf, '\0', sizeof (zerobuf));  // just in case.

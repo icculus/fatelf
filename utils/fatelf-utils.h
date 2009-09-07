@@ -86,6 +86,9 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd);
 // Align a value to the page size.
 uint64_t align_to_page(const uint64_t offset);
 
+const char *abi_name_string(const uint16_t abitype);
+const char *cpu_name_string(const uint32_t cputype);
+
 // Call this at the start of main().
 void xfatelf_init(int argc, const char **argv);
 
