@@ -6,9 +6,8 @@
  *  This file written by Ryan C. Gordon.
  */
 
-// !!! FIXME: this include is nasty.
 #define FATELF_UTILS 1
-#include "fatelf-utils.c"
+#include "fatelf-utils.h"
 
 static int fatelf_glue(const char *out, const char **bins, const int bincount)
 {
@@ -18,12 +17,12 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
     const int outfd = xopen(out, O_WRONLY | O_CREAT | O_TRUNC, 0755);
     uint64_t offset = FATELF_DISK_FORMAT_SIZE(bincount);
 
-    unlink_on_fail = out;
+    unlink_on_xfail = out;
 
     if (bincount == 0)
-        fail("Nothing to do.");
+        xfail("Nothing to do.");
     else if (bincount > 0xFFFF)
-        fail("Too many binaries (max is %d).", 0xFFFF);
+        xfail("Too many binaries (max is %d).", 0xFFFF);
 
     header->magic = FATELF_MAGIC;
     header->version = FATELF_FORMAT_VERSION;
@@ -48,7 +47,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
                              (other->abi == info->abi) &&
                              (other->abi_version == info->abi_version);
             if (same)
-                fail("'%s' and '%s' are for the same target.", bins[j], fname);
+                xfail("'%s' and '%s' are for the same target.", bins[j], fname);
         } // for
 
         // append this binary to the final file, padded to page alignment.
@@ -64,7 +63,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
     xclose(out, outfd);
     free(header);
 
-    unlink_on_fail = NULL;
+    unlink_on_xfail = NULL;
 
     return 0;  // success.
 } // fatelf_glue
@@ -72,9 +71,9 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
 
 int main(int argc, const char **argv)
 {
-    memset(zerobuf, '\0', sizeof (zerobuf));  // just in case.
+    xfatelf_init(argc, argv);
     if (argc < 4)  // this could stand to use getopt(), later.
-        fail("USAGE: %s <out> <bin1> <bin2> [... binN]", argv[0]);
+        xfail("USAGE: %s <out> <bin1> <bin2> [... binN]", argv[0]);
     return fatelf_glue(argv[1], &argv[2], argc - 2);
 } // main
 
