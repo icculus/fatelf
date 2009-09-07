@@ -22,13 +22,13 @@ static int fatelf_info(const char *fname)
     {
         const FATELF_binary_info *bin = &header->binaries[i];
         const fatelf_machine_info *machine = get_machine_by_id(bin->machine);
-        const fatelf_abi_info *abi = get_abi_by_id(bin->abi);
+        const fatelf_osabi_info *osabi = get_osabi_by_id(bin->osabi);
 
         printf("Binary at index #%d:\n", i);
-        printf("  ABI %u (%s%s%s) version %u,\n",
-                (unsigned int) bin->abi, abi ? abi->name : "???",
-                abi ? ": " : "", abi ? abi->desc : "",
-                (unsigned int) bin->abi_version);
+        printf("  OSABI %u (%s%s%s) version %u,\n",
+                (unsigned int) bin->osabi, osabi ? osabi->name : "???",
+                osabi ? ": " : "", osabi ? osabi->desc : "",
+                (unsigned int) bin->osabi_version);
         printf("  Machine %u (%s%s%s)\n",
                 (unsigned int) bin->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "");

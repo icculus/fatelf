@@ -133,8 +133,8 @@ void xread_elf_header(const char *fname, const int fd, FATELF_binary_info *info)
     xread(fname, fd, buf, sizeof (buf), 1);
     if (memcmp(magic, buf, sizeof (magic)) != 0)
         xfail("'%s' is not an ELF binary");
-    info->abi = (uint16_t) buf[7];
-    info->abi_version = (uint16_t) buf[8];
+    info->osabi = (uint16_t) buf[7];
+    info->osabi_version = (uint16_t) buf[8];
     if (buf[5] == 0)  // bigendian
         info->machine = (((uint16_t)buf[18]) << 8) | (((uint16_t)buf[19]));
     else if (buf[5] == 1)  // littleendian
@@ -250,8 +250,8 @@ void xwrite_fatelf_header(const char *fname, const int fd,
 
     for (i = 0; i < header->num_binaries; i++)
     {
-        ptr = putui16(ptr, header->binaries[i].abi);
-        ptr = putui16(ptr, header->binaries[i].abi_version);
+        ptr = putui16(ptr, header->binaries[i].osabi);
+        ptr = putui16(ptr, header->binaries[i].osabi_version);
         ptr = putui16(ptr, header->binaries[i].machine);
         ptr = putui16(ptr, header->binaries[i].reserved0);
         ptr = putui64(ptr, header->binaries[i].offset);
@@ -304,8 +304,8 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
 
     for (i = 0; i < bincount; i++)
     {
-        ptr = getui16(ptr, &header->binaries[i].abi);
-        ptr = getui16(ptr, &header->binaries[i].abi_version);
+        ptr = getui16(ptr, &header->binaries[i].osabi);
+        ptr = getui16(ptr, &header->binaries[i].osabi_version);
         ptr = getui16(ptr, &header->binaries[i].machine);
         ptr = getui16(ptr, &header->binaries[i].reserved0);
         ptr = getui64(ptr, &header->binaries[i].offset);
@@ -435,7 +435,7 @@ static const fatelf_machine_info machines[] =
 
 // !!! FIXME: these names/descs aren't set in stone.
 // List from: http://www.sco.com/developers/gabi/latest/ch4.eheader.html
-static const fatelf_abi_info abis[] =
+static const fatelf_osabi_info osabis[] =
 {
     // MUST BE SORTED BY ID!
     { 0, "sysv", "UNIX System V" },
@@ -487,32 +487,32 @@ const fatelf_machine_info *get_machine_by_name(const char *name)
 } // get_machine_by_name
 
 
-const fatelf_abi_info *get_abi_by_id(const uint16_t id)
+const fatelf_osabi_info *get_osabi_by_id(const uint16_t id)
 {
     int i;
-    for (i = 0; i < (sizeof (abis) / sizeof (abis[0])); i++)
+    for (i = 0; i < (sizeof (osabis) / sizeof (osabis[0])); i++)
     {
-        if (abis[i].id == id)
-            return &abis[i];
-        else if (abis[i].id > id)
+        if (osabis[i].id == id)
+            return &osabis[i];
+        else if (osabis[i].id > id)
             break;  // not found (sorted by id).
     } // for
 
     return NULL;
-} // get_abi_by_id
+} // get_osabi_by_id
 
 
-const fatelf_abi_info *get_abi_by_name(const char *name)
+const fatelf_osabi_info *get_osabi_by_name(const char *name)
 {
     int i;
-    for (i = 0; i < (sizeof (abis) / sizeof (abis[0])); i++)
+    for (i = 0; i < (sizeof (osabis) / sizeof (osabis[0])); i++)
     {
-        if (strcmp(abis[i].name, name) == 0)
-            return &abis[i];
+        if (strcmp(osabis[i].name, name) == 0)
+            return &osabis[i];
     } // for
 
     return NULL;
-} // get_abi_by_name
+} // get_osabi_by_name
 
 
 void xfatelf_init(int argc, const char **argv)

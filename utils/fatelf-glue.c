@@ -44,8 +44,8 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         {
             const FATELF_binary_info *other = &header->binaries[j];
             const int same = (other->machine == info->machine) &&
-                             (other->abi == info->abi) &&
-                             (other->abi_version == info->abi_version);
+                             (other->osabi == info->osabi) &&
+                             (other->osabi_version == info->osabi_version);
             if (same)
                 xfail("'%s' and '%s' are for the same target.", bins[j], fname);
         } // for

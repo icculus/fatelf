@@ -35,12 +35,12 @@ typedef struct fatelf_machine_info
 } fatelf_machine_info;
 
 
-typedef struct fatelf_abi_info
+typedef struct fatelf_osabi_info
 {
     uint16_t id;
     const char *name;
     const char *desc;
-} fatelf_abi_info;
+} fatelf_osabi_info;
 
 
 // all functions that start with 'x' may call exit() on error!
@@ -87,8 +87,8 @@ uint64_t align_to_page(const uint64_t offset);
 
 const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);
-const fatelf_abi_info *get_abi_by_id(const uint16_t id);
-const fatelf_abi_info *get_abi_by_name(const char *name);
+const fatelf_osabi_info *get_osabi_by_id(const uint16_t id);
+const fatelf_osabi_info *get_osabi_by_name(const char *name);
 
 // Call this at the start of main().
 void xfatelf_init(int argc, const char **argv);

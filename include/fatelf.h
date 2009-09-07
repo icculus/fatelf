@@ -20,8 +20,8 @@
 /* Values on disk are always littleendian, and align like Elf64. */
 typedef struct FATELF_binary_info
 {
-    uint16_t abi;
-    uint16_t abi_version;
+    uint16_t osabi;
+    uint16_t osabi_version;
     uint16_t machine;
     uint16_t reserved0;
     uint64_t offset;
