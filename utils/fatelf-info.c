@@ -33,6 +33,7 @@ static int fatelf_info(const char *fname)
                 (unsigned int) bin->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "");
         printf("  Offset %llu\n", (unsigned long long) bin->offset);
+        printf("  Size %llu\n", (unsigned long long) bin->size);
     } // for
 
     xclose(fname, fd);

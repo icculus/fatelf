@@ -238,6 +238,7 @@ void xwrite_fatelf_header(const char *fname, const int fd,
         ptr = putui16(ptr, header->binaries[i].machine);
         ptr = putui16(ptr, header->binaries[i].reserved0);
         ptr = putui64(ptr, header->binaries[i].offset);
+        ptr = putui64(ptr, header->binaries[i].size);
     } // for
 
     assert(ptr == (buf + buflen));
@@ -288,6 +289,7 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
         ptr = getui16(ptr, &header->binaries[i].machine);
         ptr = getui16(ptr, &header->binaries[i].reserved0);
         ptr = getui64(ptr, &header->binaries[i].offset);
+        ptr = getui64(ptr, &header->binaries[i].size);
     } // for
 
     assert(ptr == (fullbuf + buflen));

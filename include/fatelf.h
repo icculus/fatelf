@@ -15,7 +15,7 @@
 #define FATELF_FORMAT_VERSION (1)
 
 /* This does not count padding for page alignment at the end. */
-#define FATELF_DISK_FORMAT_SIZE(bins) (8 + (16 * (bins)))
+#define FATELF_DISK_FORMAT_SIZE(bins) (8 + (24 * (bins)))
 
 /* Values on disk are always littleendian, and align like Elf64. */
 typedef struct FATELF_binary_info
@@ -25,6 +25,7 @@ typedef struct FATELF_binary_info
     uint16_t machine;
     uint16_t reserved0;
     uint64_t offset;
+    uint64_t size;
 } FATELF_binary_info;
 
 /* Values on disk are always littleendian, and align like Elf64. */

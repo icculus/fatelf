@@ -52,7 +52,8 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
 
         // append this binary to the final file, padded to page alignment.
         xwrite_zeros(out, outfd, (size_t) (binary_offset - offset));
-        offset += binary_offset + xcopyfile(fname, fd, out, outfd);
+        info->size = xcopyfile(fname, fd, out, outfd);
+        offset = binary_offset + info->size;
 
         // done with this binary!
         xclose(fname, fd);
