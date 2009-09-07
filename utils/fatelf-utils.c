@@ -414,19 +414,24 @@ static const fatelf_machine_info machines[] =
 static const fatelf_abi_info abis[] =
 {
     // MUST BE SORTED BY ID!
-    { 0, "none", "No extensions or unspecified" },
+    { 0, "sysv", "UNIX System V" },
     { 1, "hpux", "Hewlett-Packard HP-UX" },
     { 2, "netbsd", "NetBSD" },
+    { 3, "linux", "Linux" },
+    { 4, "hurd", "Hurd" },
+    { 5, "86open", "86Open common IA32" },
     { 6, "solaris", "Sun Solaris" },
     { 7, "aix", "AIX" },
     { 8, "irix", "IRIX" },
     { 9, "freebsd", "FreeBSD" },
     { 10, "tru64", "Compaq TRU64 UNIX" },
     { 11, "modesto", "Novell Modesto" },
-    { 12, "openbsd", "Open BSD" },
-    { 13, "openvms", "Open VMS" },
+    { 12, "openbsd", "OpenBSD" },
+    { 13, "openvms", "OpenVMS" },
     { 14, "nsk", "Hewlett-Packard Non-Stop Kernel" },
     { 15, "aros", "Amiga Research OS" },
+    { 97, "arm", "ARM" },
+    { 255, "standalone", "Standalone application" },
 };
 
 
