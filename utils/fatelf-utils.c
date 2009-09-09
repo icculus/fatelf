@@ -154,7 +154,7 @@ size_t fatelf_header_size(const int bincount)
 static inline uint8_t *putui8(uint8_t *ptr, const uint8_t val)
 {
     *(ptr++) = val;
-    return ptr + 1;
+    return ptr;
 } // putui8
 
 
