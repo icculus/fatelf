@@ -24,6 +24,9 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
     else if (bincount > 0xFF)
         xfail("Too many binaries (max is 255).");
 
+    // pad out some bytes for the header we'll write at the end...
+    xwrite_zeros(out, outfd, (size_t) offset);
+
     header->magic = FATELF_MAGIC;
     header->version = FATELF_FORMAT_VERSION;
     header->num_records = bincount;
