@@ -11,7 +11,8 @@
 
 #include <stdint.h>
 
-#define FATELF_MAGIC (0x00Fa7E1f)
+/* This is little endian on disk, and looks like "FA700E1F" in a hex editor. */
+#define FATELF_MAGIC (0x1F0E70FA)
 #define FATELF_FORMAT_VERSION (1)
 
 /* This does not count padding for page alignment at the end. */
