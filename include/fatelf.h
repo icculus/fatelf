@@ -18,13 +18,22 @@
 /* This does not count padding for page alignment at the end. */
 #define FATELF_DISK_FORMAT_SIZE(bins) (8 + (24 * (bins)))
 
+/* Valid FATELF_record::word_size values... */
+#define FATELF_32BITS (1)
+#define FATELF_64BITS (2)
+
+/* Valid FATELF_record::byte_order values... */
+#define FATELF_BIGENDIAN (0)
+#define FATELF_LITTLEENDIAN (1)
+
 /* Values on disk are always littleendian, and align like Elf64. */
 typedef struct FATELF_record
 {
     uint16_t osabi;
     uint16_t osabi_version;
     uint16_t machine;
-    uint16_t reserved0;
+    uint8_t word_size;  /* maps to e_ident[EI_CLASS]. */
+    uint8_t byte_order; /* maps to e_ident[EI_DATA]. */
     uint64_t offset;
     uint64_t size;
 } FATELF_record;

@@ -47,6 +47,8 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         {
             const FATELF_record *other = &header->records[j];
             const int same = (other->machine == record->machine) &&
+                             (other->word_size == record->word_size) &&
+                             (other->byte_order == record->byte_order) &&
                              (other->osabi == record->osabi) &&
                              (other->osabi_version == record->osabi_version);
             if (same)

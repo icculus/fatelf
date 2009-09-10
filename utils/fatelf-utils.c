@@ -135,12 +135,24 @@ void xread_elf_header(const char *fname, const int fd, FATELF_record *record)
         xfail("'%s' is not an ELF binary");
     record->osabi = (uint16_t) buf[7];
     record->osabi_version = (uint16_t) buf[8];
-    if (buf[5] == 0)  // bigendian
+    record->word_size = buf[4];
+    record->byte_order = buf[5];
+
+    if ((record->word_size != FATELF_32BITS) &&
+        (record->word_size != FATELF_64BITS))
+    {
+        xfail("Unexpected word size (%d) in '%s'", record->word_size, fname);
+    } // if
+
+    if (record->byte_order == FATELF_BIGENDIAN)
         record->machine = (((uint16_t)buf[18]) << 8) | (((uint16_t)buf[19]));
-    else if (buf[5] == 1)  // littleendian
+    else if (record->byte_order == FATELF_LITTLEENDIAN)
         record->machine = (((uint16_t)buf[19]) << 8) | (((uint16_t)buf[18]));
     else
-        xfail("Unexpected data encoding in '%s'", fname);
+    {
+        xfail("Unexpected byte order (%d) in '%s'",
+              (int) record->byte_order, fname);
+    } // else
 } // xread_elf_header
 
 
@@ -253,7 +265,8 @@ void xwrite_fatelf_header(const char *fname, const int fd,
         ptr = putui16(ptr, header->records[i].osabi);
         ptr = putui16(ptr, header->records[i].osabi_version);
         ptr = putui16(ptr, header->records[i].machine);
-        ptr = putui16(ptr, header->records[i].reserved0);
+        ptr = putui8(ptr, header->records[i].word_size);
+        ptr = putui8(ptr, header->records[i].byte_order);
         ptr = putui64(ptr, header->records[i].offset);
         ptr = putui64(ptr, header->records[i].size);
     } // for
@@ -307,7 +320,8 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
         ptr = getui16(ptr, &header->records[i].osabi);
         ptr = getui16(ptr, &header->records[i].osabi_version);
         ptr = getui16(ptr, &header->records[i].machine);
-        ptr = getui16(ptr, &header->records[i].reserved0);
+        ptr = getui8(ptr, &header->records[i].word_size);
+        ptr = getui8(ptr, &header->records[i].byte_order);
         ptr = getui64(ptr, &header->records[i].offset);
         ptr = getui64(ptr, &header->records[i].size);
     } // for

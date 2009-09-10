@@ -9,6 +9,26 @@
 #define FATELF_UTILS 1
 #include "fatelf-utils.h"
 
+static const char *get_wordsize(const uint8_t wordsize)
+{
+    if (wordsize == FATELF_32BITS)
+        return "32";
+    else if (wordsize == FATELF_64BITS)
+        return "64";
+    return "???";
+} // get_wordsize
+
+
+static const char *get_byteorder_name(const uint8_t byteorder)
+{
+    if (byteorder == FATELF_LITTLEENDIAN)
+        return "Littleendian";
+    else if (byteorder == FATELF_BIGENDIAN)
+        return "Bigendian";
+    return "???";
+} // get_byteorder_name
+
+
 static int fatelf_info(const char *fname)
 {
     const int fd = xopen(fname, O_RDONLY, 0755);
@@ -29,6 +49,8 @@ static int fatelf_info(const char *fname)
                 (unsigned int) rec->osabi, osabi ? osabi->name : "???",
                 osabi ? ": " : "", osabi ? osabi->desc : "",
                 (unsigned int) rec->osabi_version);
+        printf("  %s bits\n", get_wordsize(rec->word_size));
+        printf("  %s byteorder\n", get_byteorder_name(rec->byte_order));
         printf("  Machine %u (%s%s%s)\n",
                 (unsigned int) rec->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "");
