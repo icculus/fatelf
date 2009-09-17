@@ -1,0 +1,219 @@
+commit 0591028b61bb19b35bdb4d92e0feab1cccc8afc1
+Author: Ryan C. Gordon <icculus@icculus.org>
+Date:   Wed Sep 16 19:57:31 2009 -0400
+
+    FatELF support for glibc-2.9
+
+diff --git a/elf/dl-load.c b/elf/dl-load.c
+index 0b896d9..bbf6138 100644
+--- a/elf/dl-load.c
++++ b/elf/dl-load.c
+@@ -27,6 +27,7 @@
+ #include <unistd.h>
+ #include <ldsodefs.h>
+ #include <bits/wordsize.h>
++#include <bits/byteswap.h>
+ #include <sys/mman.h>
+ #include <sys/param.h>
+ #include <sys/stat.h>
+@@ -131,6 +132,7 @@ struct filebuf
+ # define FILEBUF_SIZE 832
+ #endif
+   char buf[FILEBUF_SIZE] __attribute__ ((aligned (__alignof (ElfW(Ehdr)))));
++  ElfW(Off) base_offset;  /* for FatELF binaries. */
+ };
+ 
+ /* This is the decomposed LD_LIBRARY_PATH search path.  */
+@@ -985,7 +987,7 @@ _dl_map_object_from_fd (const char *name, int fd, struct filebuf *fbp,
+   else
+     {
+       phdr = alloca (maplength);
+-      __lseek (fd, header->e_phoff, SEEK_SET);
++      __lseek (fd, header->e_phoff + fbp->base_offset, SEEK_SET);
+       if ((size_t) __libc_read (fd, (void *) phdr, maplength) != maplength)
+ 	{
+ 	  errstring = N_("cannot read file data");
+@@ -1196,7 +1198,7 @@ cannot allocate TLS data structures for initial thread");
+ 	l->l_map_start = (ElfW(Addr)) __mmap ((void *) mappref, maplength,
+ 					      c->prot,
+ 					      MAP_COPY|MAP_FILE,
+-					      fd, c->mapoff);
++					      fd, c->mapoff + fbp->base_offset);
+ 	if (__builtin_expect ((void *) l->l_map_start == MAP_FAILED, 0))
+ 	  {
+ 	  map_error:
+@@ -1247,7 +1249,7 @@ cannot allocate TLS data structures for initial thread");
+ 	    && (__mmap ((void *) (l->l_addr + c->mapstart),
+ 			c->mapend - c->mapstart, c->prot,
+ 			MAP_FIXED|MAP_COPY|MAP_FILE,
+-			fd, c->mapoff)
++			fd, c->mapoff + fbp->base_offset)
+ 		== MAP_FAILED))
+ 	  goto map_error;
+ 
+@@ -1551,6 +1553,83 @@ print_search_path (struct r_search_path_elem **list,
+     _dl_debug_printf_c ("\t\t(%s)\n", what);
+ }
+ 
++#define ELF32_CLASS ELFCLASS32
++#define ELF64_CLASS ELFCLASS64
++#ifndef VALID_ELF_HEADER
++# define VALID_ELF_HEADER(hdr,exp,size)	(memcmp (hdr, exp, size) == 0)
++# define VALID_ELF_OSABI(osabi)		(osabi == ELFOSABI_SYSV)
++# define VALID_ELF_ABIVERSION(ver)	(ver == 0)
++#endif
++#if BYTE_ORDER == BIG_ENDIAN
++#define le16_to_cpu(x) __bswap_16(x)
++#define le32_to_cpu(x) __bswap_32(x)
++#define le64_to_cpu(x) __bswap_64(x)
++#else
++#define le16_to_cpu(x) (x)
++#define le32_to_cpu(x) (x)
++#define le64_to_cpu(x) (x)
++#endif
++/* See if (fd) is a handle to a FatELF file. If so, seek to the start of
++   the ELF binary we want. Returns an error string, or NULL on success.
++   If this file isn't FatELF, we consider that a success condition. */
++static const char *
++examine_fatelf(const int fd, struct filebuf *fbp)
++{
++  const fatelf_header *header = (fatelf_header *) fbp->buf;
++  size_t records = (fbp->len - sizeof (fatelf_header)) / sizeof (fatelf_record);
++  ElfW(Ehdr) ehdr;
++  size_t i;
++
++  fbp->base_offset = 0;  /* make sure this is sane. */
++
++  if (fbp->len < sizeof (fatelf_header))
++    return NULL;  /* Not FatELF (probably not ELF either, but oh well.) */
++  else if (le32_to_cpu(header->magic) != FATELF_MAGIC)
++    return NULL;  /* not FatELF; go on with normal ELF handling code. */
++  else if (le16_to_cpu(header->version) != FATELF_FORMAT_VERSION)
++    return N_("unrecognized FatELF format version");
++
++  /* XXX There may be up to 255 records, but usually there will be 2 to 5.
++     If this proves to be a problem, we can make the effort to load more data
++     from fd here. But right now, we fit between 21 and 34 records here! */
++  if (header->num_records < records)
++    records = (size_t) header->num_records;
++
++  memset((void *) &ehdr, '\0', sizeof (ehdr));
++
++  for (i = 0; i < records; i++)
++    {
++      const fatelf_record *record = &header->records[i];
++      const uint64_t offset = le64_to_cpu(record->offset);
++      const uint64_t size = le64_to_cpu(record->size);
++      const uint64_t end_offset = offset + size;
++
++      /* the only fields any of the elf_machine_matches_host()s care about. */
++      ehdr.e_machine = (ElfW(Half)) le16_to_cpu(record->machine);
++      ehdr.e_ident[EI_CLASS] = record->word_size;
++      ehdr.e_ident[EI_DATA] = record->byte_order;
++
++      /* if we fail a test here, we just jump to the next record. */
++      if (!VALID_ELF_OSABI(le16_to_cpu(record->osabi)))
++	continue;
++      else if (!VALID_ELF_ABIVERSION(le16_to_cpu(record->osabi_version)))
++	continue;
++      else if (!elf_machine_matches_host(&ehdr))
++	continue;
++      else if (((ElfW(Off)) end_offset) < offset)  /* overflow? */
++	continue;
++      else if (__lseek(fd, (off_t)le64_to_cpu(record->offset), SEEK_SET) == -1)
++	continue;
++
++      /* reset fbp with the actual ELF data... */
++      fbp->base_offset = (ElfW(Off)) offset;
++      fbp->len = __libc_read(fd, fbp->buf, sizeof (fbp->buf));
++      return NULL;  /* no error! */
++    }
++
++  return N_("No compatible ELF binaries in this FatELF file");
++}
++
+ /* Open a file and verify it is an ELF file for this architecture.  We
+    ignore only ELF files for other architectures.  Non-ELF files and
+    ELF files with different header information cause fatal errors since
+@@ -1561,13 +1640,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+ 	     int whatcode, bool *found_other_class, bool free_name)
+ {
+   /* This is the expected ELF header.  */
+-#define ELF32_CLASS ELFCLASS32
+-#define ELF64_CLASS ELFCLASS64
+-#ifndef VALID_ELF_HEADER
+-# define VALID_ELF_HEADER(hdr,exp,size)	(memcmp (hdr, exp, size) == 0)
+-# define VALID_ELF_OSABI(osabi)		(osabi == ELFOSABI_SYSV)
+-# define VALID_ELF_ABIVERSION(ver)	(ver == 0)
+-#elif defined MORE_ELF_HEADER_DATA
++#if defined MORE_ELF_HEADER_DATA
+   MORE_ELF_HEADER_DATA;
+ #endif
+   static const unsigned char expected[EI_PAD] =
+@@ -1632,6 +1705,11 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+ 
+       /* This is where the ELF header is loaded.  */
+       assert (sizeof (fbp->buf) > sizeof (ElfW(Ehdr)));
++
++      errstring = examine_fatelf(fd, fbp);
++      if (errstring)
++        goto call_lose;
++
+       ehdr = (ElfW(Ehdr) *) fbp->buf;
+ 
+       /* Now run the tests.  */
+@@ -1727,7 +1805,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+       else
+ 	{
+ 	  phdr = alloca (maplength);
+-	  __lseek (fd, ehdr->e_phoff, SEEK_SET);
++	  __lseek (fd, ehdr->e_phoff + fbp->base_offset, SEEK_SET);
+ 	  if ((size_t) __libc_read (fd, (void *) phdr, maplength) != maplength)
+ 	    {
+ 	    read_error:
+@@ -1748,7 +1826,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+ 	    else
+ 	      {
+ 		abi_note = alloca (size);
+-		__lseek (fd, ph->p_offset, SEEK_SET);
++		__lseek (fd, ph->p_offset + fbp->base_offset, SEEK_SET);
+ 		if (__libc_read (fd, (void *) abi_note, size) != size)
+ 		  goto read_error;
+ 	      }
+diff --git a/elf/elf.h b/elf/elf.h
+index ce6de07..6789c1d 100644
+--- a/elf/elf.h
++++ b/elf/elf.h
+@@ -61,6 +61,32 @@ typedef uint16_t Elf64_Section;
+ typedef Elf32_Half Elf32_Versym;
+ typedef Elf64_Half Elf64_Versym;
+ 
++/* This is little endian on disk, and looks like "FA700E1F" in a hex editor. */
++#define FATELF_MAGIC (0x1F0E70FA)
++#define FATELF_FORMAT_VERSION (1)
++
++/* FatELF values on disk are always littleendian, and align like Elf64. */
++typedef struct
++{
++    uint16_t osabi;
++    uint16_t osabi_version;
++    uint16_t machine;
++    uint8_t word_size;
++    uint8_t byte_order;
++    uint64_t offset;
++    uint64_t size;
++} fatelf_record;
++
++/* FatELF values on disk are always littleendian, and align like Elf64. */
++typedef struct
++{
++    uint32_t magic;  /* always FATELF_MAGIC */
++    uint16_t version; /* latest is always FATELF_FORMAT_VERSION */
++    uint8_t num_records;
++    uint8_t reserved0;
++    fatelf_record records[];
++} fatelf_header;
++
+ 
+ /* The ELF file header.  This appears at the start of every ELF file.  */
+ 
