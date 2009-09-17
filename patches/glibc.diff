@@ -1,11 +1,5 @@
-commit 0591028b61bb19b35bdb4d92e0feab1cccc8afc1
-Author: Ryan C. Gordon <icculus@icculus.org>
-Date:   Wed Sep 16 19:57:31 2009 -0400
-
-    FatELF support for glibc-2.9
-
 diff --git a/elf/dl-load.c b/elf/dl-load.c
-index 0b896d9..bbf6138 100644
+index 0b896d9..4a44c41 100644
 --- a/elf/dl-load.c
 +++ b/elf/dl-load.c
 @@ -27,6 +27,7 @@
@@ -51,7 +45,7 @@ index 0b896d9..bbf6138 100644
  		== MAP_FAILED))
  	  goto map_error;
  
-@@ -1551,6 +1553,83 @@ print_search_path (struct r_search_path_elem **list,
+@@ -1551,6 +1553,85 @@ print_search_path (struct r_search_path_elem **list,
      _dl_debug_printf_c ("\t\t(%s)\n", what);
  }
  
@@ -108,13 +102,15 @@ index 0b896d9..bbf6138 100644
 +
 +      /* the only fields any of the elf_machine_matches_host()s care about. */
 +      ehdr.e_machine = (ElfW(Half)) le16_to_cpu(record->machine);
++      ehdr.e_ident[EI_OSABI] = record->osabi;
++      ehdr.e_ident[EI_ABIVERSION] = record->osabi_version;
 +      ehdr.e_ident[EI_CLASS] = record->word_size;
 +      ehdr.e_ident[EI_DATA] = record->byte_order;
 +
 +      /* if we fail a test here, we just jump to the next record. */
-+      if (!VALID_ELF_OSABI(le16_to_cpu(record->osabi)))
++      if (!VALID_ELF_OSABI(record->osabi))
 +	continue;
-+      else if (!VALID_ELF_ABIVERSION(le16_to_cpu(record->osabi_version)))
++      else if (!VALID_ELF_ABIVERSION(record->osabi_version))
 +	continue;
 +      else if (!elf_machine_matches_host(&ehdr))
 +	continue;
@@ -135,7 +131,7 @@ index 0b896d9..bbf6138 100644
  /* Open a file and verify it is an ELF file for this architecture.  We
     ignore only ELF files for other architectures.  Non-ELF files and
     ELF files with different header information cause fatal errors since
-@@ -1561,13 +1640,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -1561,13 +1642,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
  	     int whatcode, bool *found_other_class, bool free_name)
  {
    /* This is the expected ELF header.  */
@@ -150,7 +146,7 @@ index 0b896d9..bbf6138 100644
    MORE_ELF_HEADER_DATA;
  #endif
    static const unsigned char expected[EI_PAD] =
-@@ -1632,6 +1705,11 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -1632,6 +1707,11 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
  
        /* This is where the ELF header is loaded.  */
        assert (sizeof (fbp->buf) > sizeof (ElfW(Ehdr)));
@@ -162,7 +158,7 @@ index 0b896d9..bbf6138 100644
        ehdr = (ElfW(Ehdr) *) fbp->buf;
  
        /* Now run the tests.  */
-@@ -1727,7 +1805,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -1727,7 +1807,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
        else
  	{
  	  phdr = alloca (maplength);
@@ -171,7 +167,7 @@ index 0b896d9..bbf6138 100644
  	  if ((size_t) __libc_read (fd, (void *) phdr, maplength) != maplength)
  	    {
  	    read_error:
-@@ -1748,7 +1826,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -1748,7 +1828,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
  	    else
  	      {
  		abi_note = alloca (size);
@@ -181,10 +177,10 @@ index 0b896d9..bbf6138 100644
  		  goto read_error;
  	      }
 diff --git a/elf/elf.h b/elf/elf.h
-index ce6de07..6789c1d 100644
+index ce6de07..d4216b0 100644
 --- a/elf/elf.h
 +++ b/elf/elf.h
-@@ -61,6 +61,32 @@ typedef uint16_t Elf64_Section;
+@@ -61,6 +61,34 @@ typedef uint16_t Elf64_Section;
  typedef Elf32_Half Elf32_Versym;
  typedef Elf64_Half Elf64_Versym;
  
@@ -195,11 +191,13 @@ index ce6de07..6789c1d 100644
 +/* FatELF values on disk are always littleendian, and align like Elf64. */
 +typedef struct
 +{
-+    uint16_t osabi;
-+    uint16_t osabi_version;
-+    uint16_t machine;
-+    uint8_t word_size;
-+    uint8_t byte_order;
++    uint16_t machine;        /* maps to e_machine */
++    uint8_t osabi;           /* maps to e_ident[EI_OSABI] */
++    uint8_t osabi_version;   /* maps to e_ident[EI_ABIVERSION] */
++    uint8_t word_size;       /* maps to e_ident[EI_CLASS] */
++    uint8_t byte_order;      /* maps to e_ident[EI_DATA] */
++    uint8_t reserved0;
++    uint8_t reserved1;
 +    uint64_t offset;
 +    uint64_t size;
 +} fatelf_record;
