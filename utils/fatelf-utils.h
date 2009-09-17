@@ -37,7 +37,7 @@ typedef struct fatelf_machine_info
 
 typedef struct fatelf_osabi_info
 {
-    uint16_t id;
+    uint8_t id;
     const char *name;
     const char *desc;
 } fatelf_osabi_info;
@@ -87,7 +87,7 @@ uint64_t align_to_page(const uint64_t offset);
 
 const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);
-const fatelf_osabi_info *get_osabi_by_id(const uint16_t id);
+const fatelf_osabi_info *get_osabi_by_id(const uint8_t id);
 const fatelf_osabi_info *get_osabi_by_name(const char *name);
 
 // Call this at the start of main().

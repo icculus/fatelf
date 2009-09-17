@@ -29,11 +29,13 @@
 /* Values on disk are always littleendian, and align like Elf64. */
 typedef struct FATELF_record
 {
-    uint16_t osabi;
-    uint16_t osabi_version;
-    uint16_t machine;
-    uint8_t word_size;  /* maps to e_ident[EI_CLASS]. */
-    uint8_t byte_order; /* maps to e_ident[EI_DATA]. */
+    uint16_t machine;       /* maps to e_machine. */
+    uint8_t osabi;          /* maps to e_ident[EI_OSABI]. */ 
+    uint8_t osabi_version;  /* maps to e_ident[EI_ABIVERSION]. */
+    uint8_t word_size;      /* maps to e_ident[EI_CLASS]. */
+    uint8_t byte_order;     /* maps to e_ident[EI_DATA]. */
+    uint8_t reserved0;
+    uint8_t reserved1;
     uint64_t offset;
     uint64_t size;
 } FATELF_record;

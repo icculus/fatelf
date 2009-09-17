@@ -133,10 +133,13 @@ void xread_elf_header(const char *fname, const int fd, FATELF_record *record)
     xread(fname, fd, buf, sizeof (buf), 1);
     if (memcmp(magic, buf, sizeof (magic)) != 0)
         xfail("'%s' is not an ELF binary");
-    record->osabi = (uint16_t) buf[7];
-    record->osabi_version = (uint16_t) buf[8];
+
+    record->osabi = buf[7];
+    record->osabi_version = buf[8];
     record->word_size = buf[4];
     record->byte_order = buf[5];
+    record->reserved0 = 0;
+    record->reserved1 = 0;
 
     if ((record->word_size != FATELF_32BITS) &&
         (record->word_size != FATELF_64BITS))
@@ -262,11 +265,13 @@ void xwrite_fatelf_header(const char *fname, const int fd,
 
     for (i = 0; i < header->num_records; i++)
     {
-        ptr = putui16(ptr, header->records[i].osabi);
-        ptr = putui16(ptr, header->records[i].osabi_version);
         ptr = putui16(ptr, header->records[i].machine);
+        ptr = putui8(ptr, header->records[i].osabi);
+        ptr = putui8(ptr, header->records[i].osabi_version);
         ptr = putui8(ptr, header->records[i].word_size);
         ptr = putui8(ptr, header->records[i].byte_order);
+        ptr = putui8(ptr, header->records[i].reserved0);
+        ptr = putui8(ptr, header->records[i].reserved1);
         ptr = putui64(ptr, header->records[i].offset);
         ptr = putui64(ptr, header->records[i].size);
     } // for
@@ -317,11 +322,13 @@ FATELF_header *xread_fatelf_header(const char *fname, const int fd)
 
     for (i = 0; i < bincount; i++)
     {
-        ptr = getui16(ptr, &header->records[i].osabi);
-        ptr = getui16(ptr, &header->records[i].osabi_version);
         ptr = getui16(ptr, &header->records[i].machine);
+        ptr = getui8(ptr, &header->records[i].osabi);
+        ptr = getui8(ptr, &header->records[i].osabi_version);
         ptr = getui8(ptr, &header->records[i].word_size);
         ptr = getui8(ptr, &header->records[i].byte_order);
+        ptr = getui8(ptr, &header->records[i].reserved0);
+        ptr = getui8(ptr, &header->records[i].reserved1);
         ptr = getui64(ptr, &header->records[i].offset);
         ptr = getui64(ptr, &header->records[i].size);
     } // for
@@ -501,7 +508,7 @@ const fatelf_machine_info *get_machine_by_name(const char *name)
 } // get_machine_by_name
 
 
-const fatelf_osabi_info *get_osabi_by_id(const uint16_t id)
+const fatelf_osabi_info *get_osabi_by_id(const uint8_t id)
 {
     int i;
     for (i = 0; i < (sizeof (osabis) / sizeof (osabis[0])); i++)
