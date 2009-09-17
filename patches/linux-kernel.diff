@@ -18,7 +18,7 @@ index f92bdaa..6753d45 100644
  
  #define cpu_uses_ia32el()	(local_cpu_data->family > 0x1f)
 diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 7c1e65d..d90c55f 100644
+index 7c1e65d..c44970e 100644
 --- a/fs/binfmt_elf.c
 +++ b/fs/binfmt_elf.c
 @@ -37,8 +37,9 @@
@@ -88,7 +88,7 @@ index 7c1e65d..d90c55f 100644
  			total_size = 0;
  			if (!*interp_map_addr)
  				*interp_map_addr = map_addr;
-@@ -560,6 +565,97 @@ static unsigned long randomize_stack_top(unsigned long stack_top)
+@@ -560,6 +565,99 @@ static unsigned long randomize_stack_top(unsigned long stack_top)
  #endif
  }
  
@@ -133,6 +133,8 @@ index 7c1e65d..d90c55f 100644
 +		                          unlikely(osabi == ELFOSABI_LINUX) );
 +
 +		/* Fill in the data elf_check_arch() might care about. */
++		elf->e_ident[EI_OSABI] = record->osabi;
++		elf->e_ident[EI_ABIVERSION] = record->osabi_version;
 +		elf->e_ident[EI_CLASS] = record->word_size;
 +		elf->e_ident[EI_DATA] = record->byte_order;
 +		elf->e_machine = le16_to_cpu(record->machine);
@@ -186,7 +188,7 @@ index 7c1e65d..d90c55f 100644
  static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  {
  	struct file *interpreter = NULL; /* to shut gcc up */
-@@ -571,6 +667,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -571,6 +669,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  	unsigned long elf_bss, elf_brk;
  	int retval, i;
  	unsigned int size;
@@ -195,7 +197,7 @@ index 7c1e65d..d90c55f 100644
  	unsigned long elf_entry;
  	unsigned long interp_load_addr = 0;
  	unsigned long start_code, end_code, start_data, end_data;
-@@ -587,9 +685,12 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -587,9 +687,12 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  		retval = -ENOMEM;
  		goto out_ret;
  	}
@@ -211,7 +213,7 @@ index 7c1e65d..d90c55f 100644
  
  	retval = -ENOEXEC;
  	/* First of all, some simple consistency checks */
-@@ -615,7 +716,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -615,7 +718,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  	if (!elf_phdata)
  		goto out;
  
@@ -220,7 +222,7 @@ index 7c1e65d..d90c55f 100644
  			     (char *)elf_phdata, size);
  	if (retval != size) {
  		if (retval >= 0)
-@@ -649,7 +750,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -649,7 +752,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  			if (!elf_interpreter)
  				goto out_free_ph;
  
@@ -230,7 +232,7 @@ index 7c1e65d..d90c55f 100644
  					     elf_interpreter,
  					     elf_ppnt->p_filesz);
  			if (retval != elf_ppnt->p_filesz) {
-@@ -704,8 +806,13 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -704,8 +808,13 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  				goto out_free_dentry;
  			}
  
@@ -246,7 +248,7 @@ index 7c1e65d..d90c55f 100644
  			break;
  		}
  		elf_ppnt++;
-@@ -779,7 +886,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -779,7 +888,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  
  		if (unlikely (elf_brk > elf_bss)) {
  			unsigned long nbyte;
@@ -255,7 +257,7 @@ index 7c1e65d..d90c55f 100644
  			/* There was a PT_LOAD segment with p_memsz > p_filesz
  			   before this one. Map anonymous pages, if needed,
  			   and clear the area.  */
-@@ -830,7 +937,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -830,7 +939,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  		}
  
  		error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
@@ -264,7 +266,7 @@ index 7c1e65d..d90c55f 100644
  		if (BAD_ADDR(error)) {
  			send_sig(SIGKILL, current, 0);
  			retval = IS_ERR((void *)error) ?
-@@ -894,7 +1001,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -894,7 +1003,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  	 * mapping in the interpreter, to make sure it doesn't wind
  	 * up getting placed where the bss needs to go.
  	 */
@@ -273,7 +275,7 @@ index 7c1e65d..d90c55f 100644
  	if (retval) {
  		send_sig(SIGKILL, current, 0);
  		goto out_free_dentry;
-@@ -911,7 +1018,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+@@ -911,7 +1020,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
  		elf_entry = load_elf_interp(&loc->interp_elf_ex,
  					    interpreter,
  					    &interp_map_addr,
@@ -282,7 +284,7 @@ index 7c1e65d..d90c55f 100644
  		if (!IS_ERR((void *)elf_entry)) {
  			/*
  			 * load_elf_interp() returns relocation
-@@ -1026,11 +1133,19 @@ static int load_elf_library(struct file *file)
+@@ -1026,11 +1135,19 @@ static int load_elf_library(struct file *file)
  	unsigned long elf_bss, bss, len;
  	int retval, error, i, j;
  	struct elfhdr elf_ex;
@@ -305,7 +307,7 @@ index 7c1e65d..d90c55f 100644
  
  	if (memcmp(elf_ex.e_ident, ELFMAG, SELFMAG) != 0)
  		goto out;
-@@ -1052,7 +1167,8 @@ static int load_elf_library(struct file *file)
+@@ -1052,7 +1169,8 @@ static int load_elf_library(struct file *file)
  
  	eppnt = elf_phdata;
  	error = -ENOEXEC;
@@ -315,7 +317,7 @@ index 7c1e65d..d90c55f 100644
  	if (retval != j)
  		goto out_free_ph;
  
-@@ -1074,7 +1190,7 @@ static int load_elf_library(struct file *file)
+@@ -1074,7 +1192,7 @@ static int load_elf_library(struct file *file)
  			PROT_READ | PROT_WRITE | PROT_EXEC,
  			MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE,
  			(eppnt->p_offset -
