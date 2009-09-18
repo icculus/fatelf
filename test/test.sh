@@ -11,14 +11,17 @@ make -j2
 
 gcc -o hello.so ../hello-lib.c -shared -fPIC -m32
 gcc -o hello-x86 ../hello.c hello.so -m32 -Wl,-rpath,.
+gcc -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
 mv hello.so hello-x86.so
 
 gcc -o hello.so ../hello-lib.c -shared -fPIC -m64
 gcc -o hello-amd64 ../hello.c hello.so -m64 -Wl,-rpath,.
+gcc -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
 mv hello.so hello-amd64.so
 
 ./fatelf-glue hello hello-x86 hello-amd64
 ./fatelf-glue hello.so hello-amd64.so hello-x86.so
+./fatelf-glue hello-dlopen hello-dlopen-amd64 hello-dlopen-x86
 
 file ./hello
 ./fatelf-info ./hello
@@ -26,10 +29,15 @@ file ./hello
 file ./hello.so
 ./fatelf-info ./hello.so
 
+file ./hello-dlopen
+./fatelf-info ./hello-dlopen
+
 ldd ./hello
 ldd ./hello.so
+ldd ./hello-dlopen
 
 ./hello
+./hello-dlopen
 
 # end of test.sh ...
 
