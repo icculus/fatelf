@@ -21,7 +21,7 @@ mv hello.so hello-amd64.so
 
 ./fatelf-glue hello hello-x86 hello-amd64
 ./fatelf-glue hello.so hello-amd64.so hello-x86.so
-./fatelf-glue hello-dlopen hello-dlopen-amd64 hello-dlopen-x86
+./fatelf-glue hello-dlopen hello-dlopen-x86 hello-dlopen-amd64
 
 file ./hello
 ./fatelf-info ./hello
