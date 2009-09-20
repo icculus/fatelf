@@ -1,0 +1,87 @@
+FatELF specification, version 1.
+
+
+FatELF is a simple container format for storing multiple Executable and
+Linkable Format (ELF) binaries in a single file. The file format is as follows.
+
+All fields are little endian on all platforms, and align like Elf64. However,
+the ELF binaries stored in the container format follow the usual rules of the
+ELF format for their target platform.
+
+FatELF Header:
+
+All FatELF files start with a "magic" number that identifies it as a FatELF
+binary. If this magic number is not present, the file in question is not in
+FatELF format.
+
+The magic number is four bytes, and when read as a 32-bit little endian value
+is 0x1F0E70FA. If read as four unsigned bytes, their hexadecimal value is:
+
+   FA 70 0E 1F
+
+If the magic value is present, the file is FatELF. Otherwise, the reader
+should treat the file as a regular ELF file (or, perhaps failing that, invalid
+data).
+
+Following the magic value is an unsigned, 16-bit value, representing the
+version of the FatELF structure. The magic value and this version value are
+always guaranteed to be the first data in a FatELF file, but any other
+structure can change. As such, FatELF files with unrecognized versions should
+be rejected by the reader as invalid.
+
+At this time, the only valid version is 1. Future revisions of this spec may
+add new version values. In such a case, implementors are encouraged to handle
+legacy versions if possible.
+
+
+
+VERSION 1 FORMAT.
+
+Following the version value is an unsigned byte that contains the number of
+records in this file. Each ELF binary contained within the file supplies a
+separate record. We will call this value the "record count."
+
+The next byte is reserved at this time, and is positioned for the sake of
+alignment. It must be set to zero.
+
+Thereafter, we have a series of records equal to the number reported in the
+record count, laid out in sequence.
+
+The record format is as follows.
+
+Each record starts with three unsigned, 16-bit values. These represent, in
+order, the OSABI, OSABI version, and cpu architecture of the referenced ELF
+binary. These fields map to e_ident[EI_OSABI], e_ident[EI_ABIVERSION], and
+e_machine in the ELF header. Next come two unsigned, 8-bit values. These
+map to e_ident[EI_CLASS] and e_ident[EI_DATA] in the ELF header. Please note
+that the FatELF structures themselves are always little endian and aligned to
+Elf64 standards, no matter what these fields contain.
+
+The next two fields of the record are unsigned, 64-bit integers that represent
+the offset and size of the contained ELF binary. The offset is in bytes and
+starts from the beginning of the file. It is illegal for the offset to not
+align to the requirements of the specific architecture. For example, if you
+have a platform that aligns memory pages on 4096 byte boundaries, then that
+platform's ELF binary would have to start at offset 4096, 8192, etc. A
+different binary in the same file may have to align different. The FatELF file
+should pad the files with null chars where appropriate to supply the proper
+alignment. This allows any given ELF binary to be memory-mapped by the system.
+
+It is illegal to have two identical records, that is, two records that only
+differ by offset and size. In such a case, behaviour is undefined:
+implementors are free to choose whichever record they please.
+
+It is illegal to have two records overlap; a record's offset and size may not
+share any bytes with another ELF binary in the file.
+
+Following the list of records are the actual ELF binaries. FatELF makes no
+promises about the data, format or layout here, except to say that any given
+ELF binary will be aligned in the file to match the platform's requirements,
+so that even in a container with other binaries that have different alignment
+requirements, the system can still properly memory-map the desired binary.
+
+It is important that the reader not trust the FatELF information and still
+properly parse the real ELF headers of a given binary. If they do not match
+what is expected, the implementation should reject the file outright as
+corrupted or malicious.
+
