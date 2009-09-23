@@ -9,14 +9,14 @@ cd cmake-build
 cmake ../..
 make -j2
 
-gcc -o hello.so ../hello-lib.c -shared -fPIC -m32
-gcc -o hello-x86 ../hello.c hello.so -m32 -Wl,-rpath,.
-gcc -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
+gcc -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m32
+gcc -O0 -ggdb3 -o hello-x86 ../hello.c hello.so -m32 -Wl,-rpath,.
+gcc -O0 -ggdb3 -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
 mv hello.so hello-x86.so
 
-gcc -o hello.so ../hello-lib.c -shared -fPIC -m64
-gcc -o hello-amd64 ../hello.c hello.so -m64 -Wl,-rpath,.
-gcc -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
+gcc -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m64
+gcc -O0 -ggdb3 -o hello-amd64 ../hello.c hello.so -m64 -Wl,-rpath,.
+gcc -O0 -ggdb3 -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
 mv hello.so hello-amd64.so
 
 ./fatelf-glue hello hello-x86 hello-amd64
