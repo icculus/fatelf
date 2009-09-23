@@ -53,12 +53,14 @@ objdump -x ./hello.so
 objdump -x ./hello-dlopen
 
 # Link directly against a FatELF shared library (binutils test).
-gcc -O0 -ggdb3 -o hello-fatlink ../hello.c hello.so -Wl,-rpath,.
+gcc -m64 -O0 -ggdb3 -o hello-fatlink-amd64 ../hello.c hello.so -Wl,-rpath,.
+gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
 
 # and, you know...run the programs themselves (glibc, kernel tests).
 ./hello
 ./hello-dlopen
-./hello-fatlink
+./hello-fatlink-amd64
+./hello-fatlink-x86
 
 # end of test.sh ...
 
