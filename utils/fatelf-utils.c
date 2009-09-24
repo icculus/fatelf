@@ -708,6 +708,16 @@ int xfind_fatelf_record(const FATELF_header *header, const char *target)
 } // xfind_fatelf_record
 
 
+int fatelf_record_matches(const FATELF_record *a, const FATELF_record *b)
+{
+    return ( (a->machine == b->machine) &&
+             (a->osabi == b->osabi) &&
+             (a->osabi_version == b->osabi_version) &&
+             (a->word_size == b->word_size) &&
+             (a->byte_order == b->byte_order) );
+} // fatelf_record_matches
+
+
 void xfatelf_init(int argc, const char **argv)
 {
     memset(zerobuf, '\0', sizeof (zerobuf));  // just in case.

@@ -102,6 +102,9 @@ const fatelf_osabi_info *get_osabi_by_name(const char *name);
 //  various formats.
 int xfind_fatelf_record(const FATELF_header *header, const char *target);
 
+// non-zero if all pertinent fields in a match b.
+int fatelf_record_matches(const FATELF_record *a, const FATELF_record *b);
+
 // Call this at the start of main().
 void xfatelf_init(int argc, const char **argv);
 

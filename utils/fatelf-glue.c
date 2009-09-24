@@ -45,13 +45,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         // make sure we don't have a duplicate target.
         for (j = 0; j < i; j++)
         {
-            const FATELF_record *other = &header->records[j];
-            const int same = (other->machine == record->machine) &&
-                             (other->word_size == record->word_size) &&
-                             (other->byte_order == record->byte_order) &&
-                             (other->osabi == record->osabi) &&
-                             (other->osabi_version == record->osabi_version);
-            if (same)
+            if (fatelf_record_matches(record, &header->records[j]))
                 xfail("'%s' and '%s' are for the same target.", bins[j], fname);
         } // for
 
