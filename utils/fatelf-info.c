@@ -29,6 +29,16 @@ static const char *get_byteorder_name(const uint8_t byteorder)
 } // get_byteorder_name
 
 
+static const char *get_byteorder_target_name(const uint8_t byteorder)
+{
+    if (byteorder == FATELF_LITTLEENDIAN)
+        return "le";
+    else if (byteorder == FATELF_BIGENDIAN)
+        return "be";
+    return "";
+} // get_byteorder_target_name
+
+
 static int fatelf_info(const char *fname)
 {
     const int fd = xopen(fname, O_RDONLY, 0755);
@@ -56,6 +66,10 @@ static int fatelf_info(const char *fname)
                 machine ? ": " : "", machine ? machine->desc : "");
         printf("  Offset %llu\n", (unsigned long long) rec->offset);
         printf("  Size %llu\n", (unsigned long long) rec->size);
+        printf("  Target string: '%s:%sbits:%s:%s:osabiver%d'\n",
+                machine ? machine->name : "", get_wordsize(rec->word_size),
+                get_byteorder_target_name(rec->byte_order),
+                osabi ? osabi->name : "", (int) rec->osabi_version);
     } // for
 
     xclose(fname, fd);
