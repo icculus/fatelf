@@ -387,7 +387,7 @@ static const fatelf_machine_info machines[] =
     { 0, "none", "No machine" },
     { 1, "m32", "AT&T WE 32100" },
     { 2, "sparc", "SPARC" },
-    { 3, "386", "Intel 80386" },
+    { 3, "i386", "Intel 80386" },
     { 4, "68k", "Motorola 68000" },
     { 5, "88k", "Motorola 88000" },
     { 7, "860", "Intel 80860" },
