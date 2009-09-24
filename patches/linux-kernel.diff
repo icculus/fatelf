@@ -134,7 +134,7 @@ index 7c1e65d..c44970e 100644
 +
 +		/* Fill in the data elf_check_arch() might care about. */
 +		elf->e_ident[EI_OSABI] = record->osabi;
-+		elf->e_ident[EI_VERSION] = record->osabi_version;
++		/*elf->e_ident[EI_ABIVERSION] = record->osabi_version;*/
 +		elf->e_ident[EI_CLASS] = record->word_size;
 +		elf->e_ident[EI_DATA] = record->byte_order;
 +		elf->e_machine = le16_to_cpu(record->machine);
@@ -340,7 +340,7 @@ index 45a937b..a81365c 100644
 +typedef struct fatelf_record {
 +  __le16 machine;      /* maps to e_machine */
 +  __u8 osabi;          /* maps to e_ident[EI_OSABI] */
-+  __u8 osabi_version;  /* maps to e_ident[EI_VERSION] */
++  __u8 osabi_version;  /* maps to e_ident[EI_ABIVERSION] */
 +  __u8 word_size;      /* maps to e_ident[EI_CLASS] */
 +  __u8 byte_order;     /* maps to e_ident[EI_DATA] */
 +  __u8 reserved0;
