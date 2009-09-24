@@ -688,15 +688,20 @@ static int xfind_fatelf_record_by_fields(const FATELF_header *header,
 
 int xfind_fatelf_record(const FATELF_header *header, const char *target)
 {
-    char *endptr = NULL;
-    const long num = strtol(target, &endptr, 0);
-
-    if ((endptr != target) && (*endptr == '\0'))  // a numeric index?
+    if (strncmp(target, "record", 6) == 0)
     {
-        const long recs = (long) header->num_records;
-        if ((num < 0) || (num > recs))
-            xfail("No record #%ld in FatELF header (max %d)", num, (int) recs);
-        return (int) num;
+        char *endptr = NULL;
+        const long num = strtol(target+6, &endptr, 0);
+        if ((endptr != target+6) && (*endptr == '\0'))  // a numeric index?
+        {
+            const long recs = (long) header->num_records;
+            if ((num < 0) || (num > recs))
+            {
+                xfail("No record #%ld in FatELF header (max %d)",
+                      num, (int) recs);
+            } // if
+            return (int) num;
+        } // if
     } // if
 
     return xfind_fatelf_record_by_fields(header, target);

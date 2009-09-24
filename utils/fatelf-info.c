@@ -66,10 +66,10 @@ static int fatelf_info(const char *fname)
                 machine ? ": " : "", machine ? machine->desc : "");
         printf("  Offset %llu\n", (unsigned long long) rec->offset);
         printf("  Size %llu\n", (unsigned long long) rec->size);
-        printf("  Target string: '%s:%sbits:%s:%s:osabiver%d'\n",
+        printf("  Target string: '%s:%sbits:%s:%s:osabiver%d' or 'record%u'\n",
                 machine ? machine->name : "", get_wordsize(rec->word_size),
                 get_byteorder_target_name(rec->byte_order),
-                osabi ? osabi->name : "", (int) rec->osabi_version);
+                osabi ? osabi->name : "", (int) rec->osabi_version, i);
     } // for
 
     xclose(fname, fd);

@@ -32,7 +32,7 @@ mv hello.so hello-amd64.so
 ./fatelf-info ./hello-dlopen
 
 # fatelf-extract tests
-./fatelf-extract ./extract-x86 ./hello 0
+./fatelf-extract ./extract-x86 ./hello record0
 diff --brief ./hello-x86 ./extract-x86
 ./fatelf-extract ./extract-amd64 ./hello x86_64:sysv:osabiver0:le:64bit
 diff --brief ./hello-amd64 ./extract-amd64
