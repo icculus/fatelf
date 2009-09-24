@@ -52,6 +52,9 @@ void xfail(const char *fmt, ...);
 // Memory is guaranteed to be initialized to zero.
 void *xmalloc(const size_t len);
 
+// Allocate a copy of (str), xfail() on allocation failure.
+char *xstrdup(const char *str);
+
 // These all xfail() on error and handle EINTR for you.
 int xopen(const char *fname, const int flags, const int perms);
 ssize_t xread(const char *fname, const int fd, void *buf,
@@ -67,6 +70,11 @@ void xwrite_zeros(const char *fname, const int fd, size_t len);
 // copy file from infd to current seek position in outfd, until infd's EOF.
 uint64_t xcopyfile(const char *in, const int infd,
                    const char *out, const int outfd);
+
+// copy file from infd to current offset in outfd, for size bytes.
+void xcopyfile_range(const char *in, const int infd,
+                     const char *out, const int outfd,
+                     const uint64_t offset, const uint64_t size);
 
 // read the parts of an ELF header we care about.
 void xread_elf_header(const char *fname, const int fd, FATELF_record *rec);
@@ -89,6 +97,10 @@ const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);
 const fatelf_osabi_info *get_osabi_by_id(const uint8_t id);
 const fatelf_osabi_info *get_osabi_by_name(const char *name);
+
+// Find the desired record in the FatELF header, based on a string in
+//  various formats.
+int xfind_fatelf_record(const FATELF_header *header, const char *target);
 
 // Call this at the start of main().
 void xfatelf_init(int argc, const char **argv);

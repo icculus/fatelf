@@ -43,6 +43,15 @@ void *xmalloc(const size_t len)
 } // xmalloc
 
 
+// Allocate a copy of (str), xfail() on allocation failure.
+char *xstrdup(const char *str)
+{
+    char *retval = (char *) xmalloc(strlen(str) + 1);
+    strcpy(retval, str);
+    return retval;
+} // xstrdup
+
+
 // xfail() on error.
 int xopen(const char *fname, const int flags, const int perms)
 {
@@ -106,23 +115,45 @@ void xlseek(const char *fname, const int fd,
 } // xlseek
 
 
+static uint8_t copybuf[256 * 1024];
+
 // xfail() on error.
 uint64_t xcopyfile(const char *in, const int infd,
                    const char *out, const int outfd)
 {
-    // !!! FIXME: use sendfile() on Linux (if it'll handle non-socket fd's).
-    static uint8_t buf[256 * 1024];
     uint64_t retval = 0;
     ssize_t rc = 0;
     xlseek(in, infd, 0, SEEK_SET);
-    while ( (rc = xread(in, infd, buf, sizeof (buf), 0)) > 0 )
+    while ( (rc = xread(in, infd, copybuf, sizeof (copybuf), 0)) > 0 )
     {
-        xwrite(out, outfd, buf, rc);
+        xwrite(out, outfd, copybuf, rc);
         retval += (uint64_t) rc;
     } // while
 
     return retval;
 } // xcopyfile
+
+
+static inline uint64_t minui64(const uint64_t a, const uint64_t b)
+{
+    return (a < b) ? a : b;
+} // minui64
+
+
+void xcopyfile_range(const char *in, const int infd,
+                     const char *out, const int outfd,
+                     const uint64_t offset, const uint64_t size)
+{
+    uint64_t remaining = size;
+    xlseek(in, infd, (off_t) offset, SEEK_SET);
+    while (remaining)
+    {
+        const size_t cpysize = minui64(remaining, sizeof (copybuf));
+        xread(in, infd, copybuf, cpysize, 1);
+        xwrite(out, outfd, copybuf, cpysize);
+        remaining -= (uint64_t) cpysize;
+    } // while
+} // xcopyfile_range
 
 
 void xread_elf_header(const char *fname, const int fd, FATELF_record *record)
@@ -475,7 +506,7 @@ static const fatelf_osabi_info osabis[] =
     { 13, "openvms", "OpenVMS" },
     { 14, "nsk", "Hewlett-Packard Non-Stop Kernel" },
     { 15, "aros", "Amiga Research OS" },
-    { 97, "arm", "ARM" },
+    { 97, "armabi", "ARM" },
     { 255, "standalone", "Standalone application" },
 };
 
@@ -534,6 +565,142 @@ const fatelf_osabi_info *get_osabi_by_name(const char *name)
 
     return NULL;
 } // get_osabi_by_name
+
+
+static int parse_abi_version_string(const char *str)
+{
+    long num = 0;
+    char *endptr = NULL;
+    const char *prefix = "osabiver";
+    const size_t prefix_len = 8;
+    assert(strlen(prefix) == prefix_len);
+    if (strncmp(str, prefix, prefix_len) != 0)
+        return -1;
+
+    str += prefix_len;
+    num = strtol(str, &endptr, 0);
+    return ( ((endptr == str) || (*endptr != '\0')) ? -1 : ((int) num) );
+} // parse_abi_version_string
+
+
+static int xfind_fatelf_record_by_fields(const FATELF_header *header,
+                                         const char *target)
+{
+    char *buf = xstrdup(target);
+    const fatelf_osabi_info *osabi = NULL;
+    const fatelf_machine_info *machine = NULL;
+    FATELF_record rec;
+    int want_machine = 0;
+    int want_osabi = 0;
+    int want_osabiver = 0;
+    int want_wordsize = 0;
+    int want_byteorder = 0;
+    int abiver = 0;
+    char *str = buf;
+    char *ptr = buf;
+    int retval = -1;
+    int i = 0;
+
+    while (1)
+    {
+        const char ch = *ptr;
+        if ((ch == ':') || (ch == '\0'))
+        {
+            *ptr = '\0';
+
+            if (ptr == str)
+            {
+                // no-op for empty string.
+            } // if
+            else if ((strcmp(str,"be")==0) || (strcmp(str,"bigendian")==0))
+            {
+                want_byteorder = 1;
+                rec.byte_order = FATELF_BIGENDIAN;
+            } // if
+            else if ((strcmp(str,"le")==0) || (strcmp(str,"littleendian")==0))
+            {
+                want_byteorder = 1;
+                rec.byte_order = FATELF_LITTLEENDIAN;
+            } // else if
+            else if (strcmp(str,"32bit") == 0)
+            {
+                want_wordsize = 1;
+                rec.word_size = FATELF_32BITS;
+            } // else if
+            else if (strcmp(str,"64bit") == 0)
+            {
+                want_wordsize = 1;
+                rec.word_size = FATELF_64BITS;
+            } // else if
+            else if ((machine = get_machine_by_name(str)) != NULL)
+            {
+                want_machine = 1;
+                rec.machine = machine->id;
+            } // else if
+            else if ((osabi = get_osabi_by_name(str)) != NULL)
+            {
+                want_osabi = 1;
+                rec.osabi = osabi->id;
+            } // else if
+            else if ((abiver = parse_abi_version_string(str)) != -1)
+            {
+                want_osabiver = 1;
+                rec.osabi_version = (uint8_t) abiver;
+            } // else if
+            else
+            {
+                xfail("Unknown target '%s'", str);
+            } // else
+
+            if (ch == '\0')
+                break;  // we're done.
+
+            str = ptr + 1;
+        } // if
+
+        ptr++;
+    } // while
+
+    free(buf);
+
+    for (i = 0; i < ((int) header->num_records); i++)
+    {
+        const FATELF_record *prec = &header->records[i];
+        if ((want_machine) && (rec.machine != prec->machine))
+            continue;
+        else if ((want_osabi) && (rec.osabi != prec->osabi))
+            continue;
+        else if ((want_osabiver) && (rec.osabi_version != prec->osabi_version))
+            continue;
+        else if ((want_wordsize) && (rec.word_size != prec->word_size))
+            continue;
+        else if ((want_byteorder) && (rec.byte_order != prec->byte_order))
+            continue;
+
+        if (retval != -1)
+            xfail("Ambiguous target '%s'", target);
+        retval = i;
+    } // for
+
+    return retval;
+} // xfind_fatelf_record_by_fields
+
+
+int xfind_fatelf_record(const FATELF_header *header, const char *target)
+{
+    char *endptr = NULL;
+    const long num = strtol(target, &endptr, 0);
+
+    if ((endptr != target) && (*endptr == '\0'))  // a numeric index?
+    {
+        const long recs = (long) header->num_records;
+        if ((num < 0) || (num > recs))
+            xfail("No record #%ld in FatELF header (max %d)", num, (int) recs);
+        return (int) num;
+    } // if
+
+    return xfind_fatelf_record_by_fields(header, target);
+} // xfind_fatelf_record
 
 
 void xfatelf_init(int argc, const char **argv)
