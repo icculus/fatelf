@@ -16,7 +16,7 @@ static int xfind_fatelf_record_by_elf(const char *fname, const int fd,
     FATELF_record record;
     int i;
 
-    xread_elf_header(fname, fd, &record);
+    xread_elf_header(fname, fd, 0, &record);
     for (i = 0; i < ((int)header->num_records); i++)
     {
         if (fatelf_record_matches(&header->records[i], &record))

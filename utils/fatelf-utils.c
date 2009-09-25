@@ -156,11 +156,12 @@ void xcopyfile_range(const char *in, const int infd,
 } // xcopyfile_range
 
 
-void xread_elf_header(const char *fname, const int fd, FATELF_record *record)
+void xread_elf_header(const char *fname, const int fd, const uint64_t offset,
+                      FATELF_record *record)
 {
     const uint8_t magic[4] = { 0x7F, 0x45, 0x4C, 0x46 };
     uint8_t buf[20];  // we only care about the first 20 bytes.
-    xlseek(fname, fd, 0, SEEK_SET);  // just in case.
+    xlseek(fname, fd, offset, SEEK_SET);
     xread(fname, fd, buf, sizeof (buf), 1);
     if (memcmp(magic, buf, sizeof (magic)) != 0)
         xfail("'%s' is not an ELF binary");
@@ -734,24 +735,24 @@ const char *fatelf_get_byteorder_name(const uint8_t byteorder)
 } // get_byteorder_name
 
 
-static const char *get_byteorder_target_name(const uint8_t byteorder)
+const char *fatelf_get_byteorder_target_name(const uint8_t byteorder)
 {
     if (byteorder == FATELF_LITTLEENDIAN)
         return "le";
     else if (byteorder == FATELF_BIGENDIAN)
         return "be";
     return NULL;
-} // get_byteorder_target_name
+} // fatelf_get_byteorder_target_name
 
 
-const char *get_wordsize_name(const uint8_t wordsize)
+const char *fatelf_get_wordsize_target_name(const uint8_t wordsize)
 {
     if (wordsize == FATELF_32BITS)
         return "32bits";
     else if (wordsize == FATELF_64BITS)
         return "64bits";
     return NULL;
-} // get_wordsize_name
+} // fatelf_get_wordsize_target_name
 
 
 
@@ -761,8 +762,8 @@ const char *fatelf_get_target_string(const FATELF_record *rec, const int wants)
     static char buffer[128];
     const fatelf_osabi_info *osabi = get_osabi_by_id(rec->osabi);
     const fatelf_machine_info *machine = get_machine_by_id(rec->machine);
-    const char *order = get_byteorder_target_name(rec->byte_order);
-    const char *wordsize = get_wordsize_name(rec->word_size);
+    const char *order = fatelf_get_byteorder_target_name(rec->byte_order);
+    const char *wordsize = fatelf_get_wordsize_target_name(rec->word_size);
 
     buffer[0] = '\0';
 

@@ -83,7 +83,8 @@ void xcopyfile_range(const char *in, const int infd,
                      const uint64_t offset, const uint64_t size);
 
 // read the parts of an ELF header we care about.
-void xread_elf_header(const char *fname, const int fd, FATELF_record *rec);
+void xread_elf_header(const char *fname, const int fd, const uint64_t offset,
+                      FATELF_record *rec);
 
 // How many bytes to allocate for a FATELF_header.
 size_t fatelf_header_size(const int bincount);
@@ -110,6 +111,8 @@ const char *fatelf_get_target_string(const FATELF_record *rec, const int wants);
 // these return static strings of english words.
 const char *fatelf_get_wordsize_string(const uint8_t wordsize);
 const char *fatelf_get_byteorder_name(const uint8_t byteorder);
+const char *fatelf_get_byteorder_target_name(const uint8_t byteorder);
+const char *fatelf_get_wordsize_target_name(const uint8_t wordsize);
 
 // Find the desired record in the FatELF header, based on a string in
 //  various formats.

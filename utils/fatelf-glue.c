@@ -40,7 +40,7 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         FATELF_record *record = &header->records[i];
 
         record->offset = binary_offset;
-        xread_elf_header(fname, fd, record);
+        xread_elf_header(fname, fd, 0, record);
 
         // make sure we don't have a duplicate target.
         for (j = 0; j < i; j++)
