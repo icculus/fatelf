@@ -1,0 +1,238 @@
+diff -ru gdb-6.8-orig/bfd/bfd.c gdb-6.8/bfd/bfd.c
+--- gdb-6.8-orig/bfd/bfd.c	2008-01-25 11:18:40.000000000 -0500
++++ gdb-6.8/bfd/bfd.c	2009-09-25 14:02:46.000000000 -0400
+@@ -199,6 +199,10 @@
+ .     struct objalloc *, but we use void * to avoid requiring the inclusion
+ .     of objalloc.h.  *}
+ .  void *memory;
++.
++.  {* Base offset, in bytes, of object inside a container file, such as FatELF,
++.     or a Mach-O Universal Binary. This will be zero for most things. *}
++.  ufile_ptr base_offset;
+ .};
+ .
+ */
+diff -ru gdb-6.8-orig/bfd/bfd-in2.h gdb-6.8/bfd/bfd-in2.h
+--- gdb-6.8-orig/bfd/bfd-in2.h	2008-02-20 10:17:56.000000000 -0500
++++ gdb-6.8/bfd/bfd-in2.h	2009-09-25 14:02:22.000000000 -0400
+@@ -4772,6 +4772,10 @@
+      struct objalloc *, but we use void * to avoid requiring the inclusion
+      of objalloc.h.  */
+   void *memory;
++
++  /* Base offset, in bytes, of object inside a container file, such as FatELF,
++     or a Mach-O Universal Binary. This will be zero for most things. */
++  ufile_ptr base_offset;
+ };
+ 
+ typedef enum bfd_error
+diff -ru gdb-6.8-orig/bfd/bfdio.c gdb-6.8/bfd/bfdio.c
+--- gdb-6.8-orig/bfd/bfdio.c	2008-02-20 12:42:35.000000000 -0500
++++ gdb-6.8/bfd/bfdio.c	2009-09-25 14:01:17.000000000 -0400
+@@ -281,7 +281,7 @@
+       bim = abfd->iostream;
+ 
+       if (direction == SEEK_SET)
+-	abfd->where = position;
++	abfd->where = position + abfd->base_offset;
+       else
+ 	abfd->where += position;
+ 
+@@ -337,6 +337,9 @@
+     }
+ 
+   file_position = position;
++  if (direction == SEEK_SET)
++    file_position += abfd->base_offset;
++
+   if (direction == SEEK_SET && abfd->my_archive != NULL)
+     file_position += abfd->origin;
+ 
+@@ -366,7 +369,7 @@
+     {
+       /* Adjust `where' field.  */
+       if (direction == SEEK_SET)
+-	abfd->where = position;
++	abfd->where = position + abfd->base_offset;
+       else
+ 	abfd->where += position;
+     }
+diff -ru gdb-6.8-orig/bfd/elfcode.h gdb-6.8/bfd/elfcode.h
+--- gdb-6.8-orig/bfd/elfcode.h	2007-12-24 11:55:39.000000000 -0500
++++ gdb-6.8/bfd/elfcode.h	2009-09-25 14:01:27.000000000 -0400
+@@ -496,7 +496,6 @@
+    target vectors, most of which will not match.  We have to avoid leaving
+    any side effects in ABFD, or any data it points to (like tdata), if the
+    file does not match the target vector.  */
+-
+ const bfd_target *
+ elf_object_p (bfd *abfd)
+ {
+@@ -512,9 +511,14 @@
+   bfd_size_type amt;
+   const bfd_target *target;
+   const bfd_target * const *target_ptr;
+-
++  const FatElf_External_Hdr *x_fathdr = (FatElf_External_Hdr *) &x_ehdr;
++  bfd_vma base_offset = 0;
+   preserve.marker = NULL;
+ 
++  ebd = get_elf_backend_data (abfd);
++  if (ebd->s->arch_size != ARCH_SIZE)
++    goto got_wrong_format_error;
++
+   /* Read in the ELF header in external format.  */
+ 
+   if (bfd_bread (&x_ehdr, sizeof (x_ehdr), abfd) != sizeof (x_ehdr))
+@@ -525,6 +529,102 @@
+ 	goto got_no_match;
+     }
+ 
++  /* See if this is a FatELF file, and if so, locate the correct record. */
++  if (bfd_getl32(&x_fathdr->magic) == FATELF_MAGIC)
++    {
++      FatElf_External_Record *x_fatrec_ptr;
++      unsigned char fatindex;
++
++      if (bfd_getl16(&x_fathdr->version) != FATELF_FORMAT_VERSION)
++	goto got_wrong_format_error;
++
++      /* reposition at the end of the FatELF header for record reading... */
++      if (bfd_seek (abfd, (file_ptr) -sizeof (x_ehdr), SEEK_CUR) != 0)
++	goto got_no_match;
++      else if (bfd_seek (abfd, (file_ptr) sizeof (x_fathdr), SEEK_CUR) != 0)
++	goto got_no_match;
++
++      amt = sizeof (*x_fatrec_ptr) * x_fathdr->num_records;
++      x_fatrec_ptr = (FatElf_External_Record *) bfd_alloc (abfd, amt);
++      if (!x_fatrec_ptr)
++	goto got_no_match;
++
++      if (bfd_bread (x_fatrec_ptr, amt, abfd) != amt)
++	{
++	  if (bfd_get_error () != bfd_error_system_call)
++	    goto got_wrong_format_error;
++	  else
++	    goto got_no_match;
++	}
++
++      for (fatindex = 0; fatindex < x_fathdr->num_records; fatindex++)
++	{
++	  const FatElf_External_Record *x_fatrec = &x_fatrec_ptr[fatindex];
++	  const unsigned short fatmachine = bfd_getl16(&x_fatrec->machine);
++	  bfd_uint64_t ui64_offset = 0;
++
++	  /* most of these tests are more involved in the real ELF header. */
++	  if (x_fatrec->word_size != ELFCLASS)
++	    continue;
++	  else if (x_fatrec->osabi != ebd->elf_osabi)
++	    continue;
++
++	  if (ebd->elf_machine_code != fatmachine
++	      && (ebd->elf_machine_alt1 == 0
++		  || fatmachine != ebd->elf_machine_alt1)
++	      && (ebd->elf_machine_alt2 == 0
++		  || fatmachine != ebd->elf_machine_alt2))
++	    continue;
++	
++	  switch (x_fatrec->byte_order)
++	    {
++	    case ELFDATA2MSB:		/* Big-endian */
++	      if (! bfd_header_big_endian (abfd))
++		continue;
++	      break;
++	    case ELFDATA2LSB:		/* Little-endian */
++	      if (! bfd_header_little_endian (abfd))
++		continue;
++	      break;
++	    default:			/* Unknown data encoding specified */
++	        continue;
++	    }
++
++	  ui64_offset = bfd_getl64(&x_fatrec->offset);
++	  base_offset = (bfd_vma) ui64_offset;
++	  if ((ui64_offset + bfd_getl64(&x_fatrec->size)) < ui64_offset)
++	    continue;
++
++	  if (x_fatrec->word_size == ELFCLASS32)
++	    {
++	      if ((ui64_offset + bfd_getl64(&x_fatrec->size)) > 0xFFFFFFFF)
++		continue;
++	    }
++
++	  break;  /* we can use this record! */
++	}
++
++	if (fatindex == x_fathdr->num_records)  /* no match. */
++	  goto got_wrong_format_error;
++
++	if (base_offset != (bfd_vma) ((file_ptr) base_offset))
++	  goto got_wrong_format_error;
++
++    /* Now future seeks will refer to this specific ELF binary. */
++    abfd->base_offset = (ufile_ptr) base_offset;
++	if (bfd_seek (abfd, 0, SEEK_SET) != 0)
++	  goto got_no_match;
++
++	/* pull in the actual ELF header and continue as usual. */
++	if (bfd_bread (&x_ehdr, sizeof (x_ehdr), abfd) != sizeof (x_ehdr))
++	  {
++	    if (bfd_get_error () != bfd_error_system_call)
++	      goto got_wrong_format_error;
++	    else
++	      goto got_no_match;
++	  }
++    }
++
+   /* Now check to see if we have a valid ELF file, and one that BFD can
+      make use of.  The magic number must match, the address size ('class')
+      and byte-swapping must match our XVEC entry, and it must have a
+@@ -590,8 +690,6 @@
+   if (i_ehdrp->e_shoff == 0 && i_ehdrp->e_shnum != 0)
+     goto got_wrong_format_error;
+ 
+-  ebd = get_elf_backend_data (abfd);
+-
+   /* Check that the ELF e_machine field matches what this particular
+      BFD format expects.  */
+   if (ebd->elf_machine_code != i_ehdrp->e_machine
+Only in gdb-6.8/gdb/testsuite: gdb.pie
+diff -ru gdb-6.8-orig/include/elf/external.h gdb-6.8/include/elf/external.h
+--- gdb-6.8-orig/include/elf/external.h	2006-12-06 09:36:41.000000000 -0500
++++ gdb-6.8/include/elf/external.h	2009-09-25 14:01:17.000000000 -0400
+@@ -272,4 +272,35 @@
+ 
+ #define GRP_ENTRY_SIZE		4
+ 
++
++/* FatELF support. */
++
++/* This is little endian on disk, and looks like "FA700E1F" in a hex editor. */
++#define FATELF_MAGIC (0x1F0E70FA)
++#define FATELF_FORMAT_VERSION (1)
++
++/* Values on disk are always littleendian, and align like Elf64. */
++typedef struct
++{
++    unsigned char machine[2];       /* maps to e_machine. */
++    unsigned char osabi;          /* maps to e_ident[EI_OSABI]. */
++    unsigned char osabi_version;  /* maps to e_ident[EI_ABIVERSION]. */
++    unsigned char word_size;      /* maps to e_ident[EI_CLASS]. */
++    unsigned char byte_order;     /* maps to e_ident[EI_DATA]. */
++    unsigned char reserved0;
++    unsigned char reserved1;
++    unsigned char offset[8];
++    unsigned char size[8];
++} FatElf_External_Record;
++
++/* Values on disk are always littleendian, and align like Elf64. */
++typedef struct
++{
++    unsigned char magic[4];  /* always FATELF_MAGIC */
++    unsigned char version[2]; /* latest is always FATELF_FORMAT_VERSION */
++    unsigned char num_records;
++    unsigned char reserved0;
++} FatElf_External_Hdr;
++
++
+ #endif /* _ELF_EXTERNAL_H */
