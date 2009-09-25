@@ -590,11 +590,7 @@ static int xfind_fatelf_record_by_fields(const FATELF_header *header,
     const fatelf_osabi_info *osabi = NULL;
     const fatelf_machine_info *machine = NULL;
     FATELF_record rec;
-    int want_machine = 0;
-    int want_osabi = 0;
-    int want_osabiver = 0;
-    int want_wordsize = 0;
-    int want_byteorder = 0;
+    int wants = 0;
     int abiver = 0;
     char *str = buf;
     char *ptr = buf;
@@ -614,37 +610,37 @@ static int xfind_fatelf_record_by_fields(const FATELF_header *header,
             } // if
             else if ((strcmp(str,"be")==0) || (strcmp(str,"bigendian")==0))
             {
-                want_byteorder = 1;
+                wants |= FATELF_WANT_BYTEORDER;
                 rec.byte_order = FATELF_BIGENDIAN;
             } // if
             else if ((strcmp(str,"le")==0) || (strcmp(str,"littleendian")==0))
             {
-                want_byteorder = 1;
+                wants |= FATELF_WANT_BYTEORDER;
                 rec.byte_order = FATELF_LITTLEENDIAN;
             } // else if
             else if (strcmp(str,"32bit") == 0)
             {
-                want_wordsize = 1;
+                wants |= FATELF_WANT_WORDSIZE;
                 rec.word_size = FATELF_32BITS;
             } // else if
             else if (strcmp(str,"64bit") == 0)
             {
-                want_wordsize = 1;
+                wants |= FATELF_WANT_WORDSIZE;
                 rec.word_size = FATELF_64BITS;
             } // else if
             else if ((machine = get_machine_by_name(str)) != NULL)
             {
-                want_machine = 1;
+                wants |= FATELF_WANT_MACHINE;
                 rec.machine = machine->id;
             } // else if
             else if ((osabi = get_osabi_by_name(str)) != NULL)
             {
-                want_osabi = 1;
+                wants |= FATELF_WANT_OSABI;
                 rec.osabi = osabi->id;
             } // else if
             else if ((abiver = parse_abi_version_string(str)) != -1)
             {
-                want_osabiver = 1;
+                wants |= FATELF_WANT_OSABIVER;
                 rec.osabi_version = (uint8_t) abiver;
             } // else if
             else
@@ -666,15 +662,15 @@ static int xfind_fatelf_record_by_fields(const FATELF_header *header,
     for (i = 0; i < ((int) header->num_records); i++)
     {
         const FATELF_record *prec = &header->records[i];
-        if ((want_machine) && (rec.machine != prec->machine))
+        if ((wants & FATELF_WANT_MACHINE) && (rec.machine != prec->machine))
             continue;
-        else if ((want_osabi) && (rec.osabi != prec->osabi))
+        else if ((wants & FATELF_WANT_OSABI) && (rec.osabi != prec->osabi))
             continue;
-        else if ((want_osabiver) && (rec.osabi_version != prec->osabi_version))
+        else if ((wants & FATELF_WANT_OSABIVER) && (rec.osabi_version != prec->osabi_version))
             continue;
-        else if ((want_wordsize) && (rec.word_size != prec->word_size))
+        else if ((wants & FATELF_WANT_WORDSIZE) && (rec.word_size != prec->word_size))
             continue;
-        else if ((want_byteorder) && (rec.byte_order != prec->byte_order))
+        else if ((wants & FATELF_WANT_BYTEORDER) && (rec.byte_order != prec->byte_order))
             continue;
 
         if (retval != -1)
@@ -716,6 +712,99 @@ int fatelf_record_matches(const FATELF_record *a, const FATELF_record *b)
              (a->word_size == b->word_size) &&
              (a->byte_order == b->byte_order) );
 } // fatelf_record_matches
+
+
+const char *fatelf_get_wordsize_string(const uint8_t wordsize)
+{
+    if (wordsize == FATELF_32BITS)
+        return "32";
+    else if (wordsize == FATELF_64BITS)
+        return "64";
+    return "???";
+} // fatelf_get_wordsize_string
+
+
+const char *fatelf_get_byteorder_name(const uint8_t byteorder)
+{
+    if (byteorder == FATELF_LITTLEENDIAN)
+        return "Littleendian";
+    else if (byteorder == FATELF_BIGENDIAN)
+        return "Bigendian";
+    return "???";
+} // get_byteorder_name
+
+
+static const char *get_byteorder_target_name(const uint8_t byteorder)
+{
+    if (byteorder == FATELF_LITTLEENDIAN)
+        return "le";
+    else if (byteorder == FATELF_BIGENDIAN)
+        return "be";
+    return NULL;
+} // get_byteorder_target_name
+
+
+const char *get_wordsize_name(const uint8_t wordsize)
+{
+    if (wordsize == FATELF_32BITS)
+        return "32bits";
+    else if (wordsize == FATELF_64BITS)
+        return "64bits";
+    return NULL;
+} // get_wordsize_name
+
+
+
+const char *fatelf_get_target_string(const FATELF_record *rec, const int wants)
+{
+    // !!! FIXME: this code is sort of stinky.
+    static char buffer[128];
+    const fatelf_osabi_info *osabi = get_osabi_by_id(rec->osabi);
+    const fatelf_machine_info *machine = get_machine_by_id(rec->machine);
+    const char *order = get_byteorder_target_name(rec->byte_order);
+    const char *wordsize = get_wordsize_name(rec->word_size);
+
+    buffer[0] = '\0';
+
+    if ((wants & FATELF_WANT_MACHINE) && (machine))
+    {
+        if (buffer[0])
+            strcat(buffer, ":");
+        strcat(buffer, machine->name);
+    } // if
+
+    if ((wants & FATELF_WANT_WORDSIZE) && (wordsize))
+    {
+        if (buffer[0])
+            strcat(buffer, ":");
+        strcat(buffer, wordsize);
+    } // if
+
+    if ((wants & FATELF_WANT_BYTEORDER) && (order))
+    {
+        if (buffer[0])
+            strcat(buffer, ":");
+        strcat(buffer, order);
+    } // if
+
+    if ((wants & FATELF_WANT_OSABI) && (osabi))
+    {
+        if (buffer[0])
+            strcat(buffer, ":");
+        strcat(buffer, osabi->name);
+    } // if
+
+    if (wants & FATELF_WANT_OSABIVER)
+    {
+        char tmp[32];
+        if (buffer[0])
+            strcat(buffer, ":");
+        snprintf(tmp, sizeof (tmp), "osabiver%d", (int) rec->osabi_version);
+        strcat(buffer, tmp);
+    } // if
+
+    return buffer;
+} // fatelf_get_target_string
 
 
 void xfatelf_init(int argc, const char **argv)

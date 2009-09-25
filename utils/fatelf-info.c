@@ -9,36 +9,6 @@
 #define FATELF_UTILS 1
 #include "fatelf-utils.h"
 
-static const char *get_wordsize(const uint8_t wordsize)
-{
-    if (wordsize == FATELF_32BITS)
-        return "32";
-    else if (wordsize == FATELF_64BITS)
-        return "64";
-    return "???";
-} // get_wordsize
-
-
-static const char *get_byteorder_name(const uint8_t byteorder)
-{
-    if (byteorder == FATELF_LITTLEENDIAN)
-        return "Littleendian";
-    else if (byteorder == FATELF_BIGENDIAN)
-        return "Bigendian";
-    return "???";
-} // get_byteorder_name
-
-
-static const char *get_byteorder_target_name(const uint8_t byteorder)
-{
-    if (byteorder == FATELF_LITTLEENDIAN)
-        return "le";
-    else if (byteorder == FATELF_BIGENDIAN)
-        return "be";
-    return "";
-} // get_byteorder_target_name
-
-
 static int fatelf_info(const char *fname)
 {
     const int fd = xopen(fname, O_RDONLY, 0755);
@@ -59,17 +29,15 @@ static int fatelf_info(const char *fname)
                 (unsigned int) rec->osabi, osabi ? osabi->name : "???",
                 osabi ? ": " : "", osabi ? osabi->desc : "",
                 (unsigned int) rec->osabi_version);
-        printf("  %s bits\n", get_wordsize(rec->word_size));
-        printf("  %s byteorder\n", get_byteorder_name(rec->byte_order));
+        printf("  %s bits\n", fatelf_get_wordsize_string(rec->word_size));
+        printf("  %s byteorder\n", fatelf_get_byteorder_name(rec->byte_order));
         printf("  Machine %u (%s%s%s)\n",
                 (unsigned int) rec->machine, machine ? machine->name : "???",
                 machine ? ": " : "", machine ? machine->desc : "");
         printf("  Offset %llu\n", (unsigned long long) rec->offset);
         printf("  Size %llu\n", (unsigned long long) rec->size);
-        printf("  Target string: '%s:%sbits:%s:%s:osabiver%d' or 'record%u'\n",
-                machine ? machine->name : "", get_wordsize(rec->word_size),
-                get_byteorder_target_name(rec->byte_order),
-                osabi ? osabi->name : "", (int) rec->osabi_version, i);
+        printf("  Target string: '%s' or 'record%u'\n",
+               fatelf_get_target_string(rec, FATELF_WANT_EVERYTHING), i);
     } // for
 
     xclose(fname, fd);

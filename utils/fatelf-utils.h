@@ -26,6 +26,12 @@
 
 extern const char *unlink_on_xfail;
 
+#define FATELF_WANT_MACHINE   (1 << 0)
+#define FATELF_WANT_OSABI     (1 << 1)
+#define FATELF_WANT_OSABIVER  (1 << 2)
+#define FATELF_WANT_WORDSIZE  (1 << 3)
+#define FATELF_WANT_BYTEORDER (1 << 4)
+#define FATELF_WANT_EVERYTHING 0xFFFF
 
 typedef struct fatelf_machine_info
 {
@@ -97,6 +103,13 @@ const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);
 const fatelf_osabi_info *get_osabi_by_id(const uint8_t id);
 const fatelf_osabi_info *get_osabi_by_name(const char *name);
+
+// Returns a string that can be used to target a specific record.
+const char *fatelf_get_target_string(const FATELF_record *rec, const int wants);
+
+// these return static strings of english words.
+const char *fatelf_get_wordsize_string(const uint8_t wordsize);
+const char *fatelf_get_byteorder_name(const uint8_t byteorder);
 
 // Find the desired record in the FatELF header, based on a string in
 //  various formats.
