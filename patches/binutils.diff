@@ -1,162 +1,65 @@
-diff -ru binutils-2.19.1-orig/bfd/elf32-m32c.c binutils-2.19.1/bfd/elf32-m32c.c
---- binutils-2.19.1-orig/bfd/elf32-m32c.c	2008-07-30 00:34:56.000000000 -0400
-+++ binutils-2.19.1/bfd/elf32-m32c.c	2009-09-22 23:42:45.000000000 -0400
-@@ -1341,6 +1341,7 @@
-      struct bfd_link_info * link_info,
-      bfd_boolean *          again)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   Elf_Internal_Shdr *symtab_hdr;
-   Elf_Internal_Shdr *shndx_hdr;
-   Elf_Internal_Rela *internal_relocs;
-@@ -1402,7 +1403,7 @@
-       shndx_buf = (Elf_External_Sym_Shndx *) bfd_malloc (amt);
-       if (shndx_buf == NULL)
- 	goto error_return;
--      if (bfd_seek (abfd, shndx_hdr->sh_offset, SEEK_SET) != 0
-+      if (bfd_seek (abfd, shndx_hdr->sh_offset + base_offset, SEEK_SET) != 0
- 	  || bfd_bread ((PTR) shndx_buf, amt, abfd) != amt)
- 	goto error_return;
-       shndx_hdr->contents = (bfd_byte *) shndx_buf;
-diff -ru binutils-2.19.1-orig/bfd/elf64-sparc.c binutils-2.19.1/bfd/elf64-sparc.c
---- binutils-2.19.1-orig/bfd/elf64-sparc.c	2008-02-14 22:35:52.000000000 -0500
-+++ binutils-2.19.1/bfd/elf64-sparc.c	2009-09-22 23:44:05.000000000 -0400
-@@ -56,6 +56,7 @@
- 				   Elf_Internal_Shdr *rel_hdr,
- 				   asymbol **symbols, bfd_boolean dynamic)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   PTR allocated = NULL;
-   bfd_byte *native_relocs;
-   arelent *relent;
-@@ -68,7 +69,7 @@
-   if (allocated == NULL)
-     goto error_return;
+diff -ur binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
+--- binutils-2.19.1-orig/bfd/bfd.c	2008-08-16 23:12:49.000000000 -0400
++++ binutils-2.19.1/bfd/bfd.c	2009-09-25 13:30:16.000000000 -0400
+@@ -278,6 +278,10 @@
+ .
+ .  {* Set if this is a thin archive.  *}
+ .  unsigned int is_thin_archive : 1;
++.
++.  {* Base offset, in bytes, of object inside a container file, such as FatELF,
++.     or a Mach-O Universal Binary. This will be zero for most things. *}
++.  ufile_ptr base_offset;
+ .};
+ .
+ */
+diff -ur binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
+--- binutils-2.19.1-orig/bfd/bfd-in2.h	2008-08-20 19:28:57.000000000 -0400
++++ binutils-2.19.1/bfd/bfd-in2.h	2009-09-25 13:33:23.000000000 -0400
+@@ -4823,6 +4823,10 @@
  
--  if (bfd_seek (abfd, rel_hdr->sh_offset, SEEK_SET) != 0
-+  if (bfd_seek (abfd, rel_hdr->sh_offset + base_offset, SEEK_SET) != 0
-       || bfd_bread (allocated, rel_hdr->sh_size, abfd) != rel_hdr->sh_size)
-     goto error_return;
- 
-diff -ru binutils-2.19.1-orig/bfd/elf-bfd.h binutils-2.19.1/bfd/elf-bfd.h
---- binutils-2.19.1-orig/bfd/elf-bfd.h	2008-08-20 19:28:58.000000000 -0400
-+++ binutils-2.19.1/bfd/elf-bfd.h	2009-09-23 01:42:06.000000000 -0400
-@@ -1578,6 +1578,8 @@
-   /* An identifier used to distinguish different target
-      specific extensions to this structure.  */
-   enum elf_object_id object_id;
+   /* Set if this is a thin archive.  */
+   unsigned int is_thin_archive : 1;
 +
-+  bfd_vma base_offset;  /* base offset inside a FatELF file. */
++  /* Base offset, in bytes, of object inside a container file, such as FatELF,
++     or a Mach-O Universal Binary. This will be zero for most things. */
++  ufile_ptr base_offset;
  };
  
- #define elf_tdata(bfd)		((bfd) -> tdata.elf_obj_data)
-diff -ru binutils-2.19.1-orig/bfd/elf.c binutils-2.19.1/bfd/elf.c
---- binutils-2.19.1-orig/bfd/elf.c	2008-12-23 08:54:48.000000000 -0500
-+++ binutils-2.19.1/bfd/elf.c	2009-09-23 01:42:06.000000000 -0400
-@@ -261,6 +261,7 @@
- char *
- bfd_elf_get_str_section (bfd *abfd, unsigned int shindex)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   Elf_Internal_Shdr **i_shdrp;
-   bfd_byte *shstrtab = NULL;
-   file_ptr offset;
-@@ -283,7 +284,7 @@
- 	 in case the string table is not terminated.  */
-       if (shstrtabsize + 1 <= 1
- 	  || (shstrtab = bfd_alloc (abfd, shstrtabsize + 1)) == NULL
--	  || bfd_seek (abfd, offset, SEEK_SET) != 0)
-+	  || bfd_seek (abfd, offset + base_offset, SEEK_SET) != 0)
- 	shstrtab = NULL;
-       else if (bfd_bread (shstrtab, shstrtabsize, abfd) != shstrtabsize)
- 	{
-@@ -353,6 +354,7 @@
- 		      void *extsym_buf,
- 		      Elf_External_Sym_Shndx *extshndx_buf)
- {
-+  const bfd_vma base_offset = elf_tdata (ibfd)->base_offset;
-   Elf_Internal_Shdr *shndx_hdr;
-   void *alloc_ext;
-   const bfd_byte *esym;
-@@ -391,7 +393,7 @@
-       extsym_buf = alloc_ext;
+ typedef enum bfd_error
+diff -ur binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
+--- binutils-2.19.1-orig/bfd/bfdio.c	2008-02-20 12:42:35.000000000 -0500
++++ binutils-2.19.1/bfd/bfdio.c	2009-09-25 13:29:39.000000000 -0400
+@@ -281,7 +281,7 @@
+       bim = abfd->iostream;
+ 
+       if (direction == SEEK_SET)
+-	abfd->where = position;
++	abfd->where = position + abfd->base_offset;
+       else
+ 	abfd->where += position;
+ 
+@@ -337,6 +337,9 @@
      }
-   if (extsym_buf == NULL
--      || bfd_seek (ibfd, pos, SEEK_SET) != 0
-+      || bfd_seek (ibfd, pos + base_offset, SEEK_SET) != 0
-       || bfd_bread (extsym_buf, amt, ibfd) != amt)
+ 
+   file_position = position;
++  if (direction == SEEK_SET)
++    file_position += abfd->base_offset;
++
+   if (direction == SEEK_SET && abfd->my_archive != NULL)
+     file_position += abfd->origin;
+ 
+@@ -366,7 +369,7 @@
      {
-       intsym_buf = NULL;
-@@ -411,7 +413,7 @@
- 	  extshndx_buf = alloc_extshndx;
- 	}
-       if (extshndx_buf == NULL
--	  || bfd_seek (ibfd, pos, SEEK_SET) != 0
-+	  || bfd_seek (ibfd, pos + base_offset, SEEK_SET) != 0
- 	  || bfd_bread (extshndx_buf, amt, ibfd) != amt)
- 	{
- 	  intsym_buf = NULL;
-@@ -524,6 +526,7 @@
- static bfd_boolean
- setup_group (bfd *abfd, Elf_Internal_Shdr *hdr, asection *newsect)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   unsigned int num_group = elf_tdata (abfd)->num_group;
- 
-   /* If num_group is zero, read in all SHT_GROUP sections.  The count
-@@ -598,7 +601,7 @@
- 
- 		  memset (shdr->contents, 0, amt);
- 
--		  if (bfd_seek (abfd, shdr->sh_offset, SEEK_SET) != 0
-+		  if (bfd_seek (abfd, shdr->sh_offset + base_offset, SEEK_SET) != 0
- 		      || (bfd_bread (shdr->contents, shdr->sh_size, abfd)
- 			  != shdr->sh_size))
- 		    return FALSE;
-@@ -6628,6 +6631,7 @@
- bfd_boolean
- _bfd_elf_slurp_version_tables (bfd *abfd, bfd_boolean default_imported_symver)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   bfd_byte *contents = NULL;
-   unsigned int freeidx = 0;
- 
-@@ -6656,7 +6660,7 @@
- 	  elf_tdata (abfd)->cverrefs = 0;
- 	  goto error_return;
- 	}
--      if (bfd_seek (abfd, hdr->sh_offset, SEEK_SET) != 0
-+      if (bfd_seek (abfd, hdr->sh_offset + base_offset, SEEK_SET) != 0
- 	  || bfd_bread (contents, hdr->sh_size, abfd) != hdr->sh_size)
- 	goto error_return_verref;
- 
-@@ -6760,7 +6764,7 @@
-       contents = bfd_malloc (hdr->sh_size);
-       if (contents == NULL)
- 	goto error_return;
--      if (bfd_seek (abfd, hdr->sh_offset, SEEK_SET) != 0
-+      if (bfd_seek (abfd, hdr->sh_offset + base_offset, SEEK_SET) != 0
- 	  || bfd_bread (contents, hdr->sh_size, abfd) != hdr->sh_size)
- 	goto error_return;
- 
-@@ -8595,12 +8599,13 @@
- static bfd_boolean
- elf_read_notes (bfd *abfd, file_ptr offset, bfd_size_type size)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   char *buf;
- 
-   if (size <= 0)
-     return TRUE;
- 
--  if (bfd_seek (abfd, offset, SEEK_SET) != 0)
-+  if (bfd_seek (abfd, offset + base_offset, SEEK_SET) != 0)
-     return FALSE;
- 
-   buf = bfd_malloc (size);
-diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
+       /* Adjust `where' field.  */
+       if (direction == SEEK_SET)
+-	abfd->where = position;
++	abfd->where = position + abfd->base_offset;
+       else
+ 	abfd->where += position;
+     }
+diff -ur binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
 --- binutils-2.19.1-orig/bfd/elfcode.h	2008-08-01 08:21:28.000000000 -0400
-+++ binutils-2.19.1/bfd/elfcode.h	2009-09-23 01:45:51.000000000 -0400
++++ binutils-2.19.1/bfd/elfcode.h	2009-09-25 13:50:00.000000000 -0400
 @@ -479,7 +479,6 @@
     target vectors, most of which will not match.  We have to avoid leaving
     any side effects in ABFD, or any data it points to (like tdata), if the
@@ -181,7 +84,7 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Read in the ELF header in external format.  */
  
    if (bfd_bread (&x_ehdr, sizeof (x_ehdr), abfd) != sizeof (x_ehdr))
-@@ -508,6 +512,100 @@
+@@ -508,6 +512,102 @@
  	goto got_no_match;
      }
  
@@ -266,7 +169,9 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
 +	if (base_offset != (bfd_vma) ((file_ptr) base_offset))
 +	  goto got_wrong_format_error;
 +
-+	if (bfd_seek (abfd, (file_ptr) base_offset, SEEK_SET) != 0)
++    /* Now future seeks will refer to this specific ELF binary. */
++    abfd->base_offset = (ufile_ptr) base_offset;
++	if (bfd_seek (abfd, 0, SEEK_SET) != 0)
 +	  goto got_no_match;
 +
 +	/* pull in the actual ELF header and continue as usual. */
@@ -282,15 +187,6 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Now check to see if we have a valid ELF file, and one that BFD can
       make use of.  The magic number must match, the address size ('class')
       and byte-swapping must match our XVEC entry, and it must have a
-@@ -547,6 +645,8 @@
-     goto got_no_match;
-   preserve.marker = elf_tdata (abfd);
- 
-+  elf_tdata (abfd)->base_offset = base_offset;
-+
-   /* Now that we know the byte order, swap in the rest of the header */
-   i_ehdrp = elf_elfheader (abfd);
-   elf_swap_ehdr_in (abfd, &x_ehdr, i_ehdrp);
 @@ -573,10 +673,6 @@
    if (i_ehdrp->e_shoff == 0 && i_ehdrp->e_shnum != 0)
      goto got_wrong_format_error;
@@ -302,181 +198,9 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Check that the ELF e_machine field matches what this particular
       BFD format expects.  */
    if (ebd->elf_machine_code != i_ehdrp->e_machine
-@@ -668,9 +764,9 @@
- 
-   if (i_ehdrp->e_shoff != 0)
-     {
--      bfd_signed_vma where = i_ehdrp->e_shoff;
-+      bfd_vma where = i_ehdrp->e_shoff + base_offset;
- 
--      if (where != (file_ptr) where)
-+      if (where != (bfd_vma) ((file_ptr) where))
- 	goto got_wrong_format_error;
- 
-       /* Seek to the section header table in the file.  */
-@@ -711,9 +807,9 @@
- 	    goto got_wrong_format_error;
- 
- 	  where += (i_ehdrp->e_shnum - 1) * sizeof (x_shdr);
--	  if (where != (file_ptr) where)
-+	  if (where != (bfd_vma) ((file_ptr) where))
- 	    goto got_wrong_format_error;
--	  if ((bfd_size_type) where <= i_ehdrp->e_shoff)
-+	  if ((bfd_size_type) where <= (i_ehdrp->e_shoff + base_offset))
- 	    goto got_wrong_format_error;
- 
- 	  if (bfd_seek (abfd, (file_ptr) where, SEEK_SET) != 0)
-@@ -722,7 +818,7 @@
- 	    goto got_no_match;
- 
- 	  /* Back to where we were.  */
--	  where = i_ehdrp->e_shoff + sizeof (x_shdr);
-+	  where = (i_ehdrp->e_shoff + sizeof (x_shdr)) + base_offset;
- 	  if (bfd_seek (abfd, (file_ptr) where, SEEK_SET) != 0)
- 	    goto got_no_match;
- 	}
-@@ -804,13 +900,14 @@
-   else
-     {
-       Elf_Internal_Phdr *i_phdr;
-+      bfd_vma where = i_ehdrp->e_phoff + base_offset;
-       unsigned int i;
- 
-       amt = i_ehdrp->e_phnum * sizeof (Elf_Internal_Phdr);
-       elf_tdata (abfd)->phdr = bfd_alloc (abfd, amt);
-       if (elf_tdata (abfd)->phdr == NULL)
- 	goto got_no_match;
--      if (bfd_seek (abfd, (file_ptr) i_ehdrp->e_phoff, SEEK_SET) != 0)
-+      if (bfd_seek (abfd, (file_ptr) where, SEEK_SET) != 0)
- 	goto got_no_match;
-       i_phdr = elf_tdata (abfd)->phdr;
-       for (i = 0; i < i_ehdrp->e_phnum; i++, i_phdr++)
-@@ -1142,6 +1239,7 @@
-   Elf_External_Versym *xver;
-   Elf_External_Versym *xverbuf = NULL;
-   const struct elf_backend_data *ebd;
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   bfd_size_type amt;
- 
-   /* Read each raw ELF symbol, converting from external ELF form to
-@@ -1210,7 +1308,8 @@
- 
-       if (verhdr != NULL)
- 	{
--	  if (bfd_seek (abfd, verhdr->sh_offset, SEEK_SET) != 0)
-+	  const bfd_signed_vma where = verhdr->sh_offset + base_offset;
-+	  if (bfd_seek (abfd, (file_ptr) where, SEEK_SET) != 0)
- 	    goto error_return;
- 
- 	  xverbuf = bfd_malloc (verhdr->sh_size);
-@@ -1380,6 +1479,8 @@
- 				    bfd_boolean dynamic)
- {
-   const struct elf_backend_data * const ebd = get_elf_backend_data (abfd);
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-+  const file_ptr where = (file_ptr) (rel_hdr->sh_offset + base_offset);
-   void *allocated = NULL;
-   bfd_byte *native_relocs;
-   arelent *relent;
-@@ -1391,7 +1492,7 @@
-   if (allocated == NULL)
-     goto error_return;
- 
--  if (bfd_seek (abfd, rel_hdr->sh_offset, SEEK_SET) != 0
-+  if (bfd_seek (abfd, where, SEEK_SET) != 0
-       || (bfd_bread (allocated, rel_hdr->sh_size, abfd)
- 	  != rel_hdr->sh_size))
-     goto error_return;
-@@ -1842,3 +1943,4 @@
-   elf_swap_reloca_in,
-   elf_swap_reloca_out
- };
-+
-diff -ru binutils-2.19.1-orig/bfd/elflink.c binutils-2.19.1/bfd/elflink.c
---- binutils-2.19.1-orig/bfd/elflink.c	2008-08-22 04:32:39.000000000 -0400
-+++ binutils-2.19.1/bfd/elflink.c	2009-09-23 01:42:07.000000000 -0400
-@@ -2081,6 +2081,7 @@
- 				   void *external_relocs,
- 				   Elf_Internal_Rela *internal_relocs)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   const struct elf_backend_data *bed;
-   void (*swap_in) (bfd *, const bfd_byte *, Elf_Internal_Rela *);
-   const bfd_byte *erela;
-@@ -2090,7 +2091,7 @@
-   size_t nsyms;
- 
-   /* Position ourselves at the start of the section.  */
--  if (bfd_seek (abfd, shdr->sh_offset, SEEK_SET) != 0)
-+  if (bfd_seek (abfd, shdr->sh_offset + base_offset, SEEK_SET) != 0)
-     return FALSE;
- 
-   /* Read the relocations.  */
-@@ -3297,6 +3298,7 @@
- static bfd_boolean
- elf_link_add_object_symbols (bfd *abfd, struct bfd_link_info *info)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   Elf_Internal_Shdr *hdr;
-   bfd_size_type symcount;
-   bfd_size_type extsymcount;
-@@ -3695,7 +3697,7 @@
- 	  if (extversym == NULL)
- 	    goto error_free_sym;
- 	  amt = versymhdr->sh_size;
--	  if (bfd_seek (abfd, versymhdr->sh_offset, SEEK_SET) != 0
-+	  if (bfd_seek (abfd, versymhdr->sh_offset + base_offset, SEEK_SET) != 0
- 	      || bfd_bread (extversym, amt, abfd) != amt)
- 	    goto error_free_vers;
- 	}
-@@ -8289,6 +8291,7 @@
-       Elf_Internal_Sym *isymbuf;
-       Elf_External_Versym *ever;
-       Elf_External_Versym *extversym;
-+      bfd_vma base_offset;
- 
-       input = loaded->abfd;
- 
-@@ -8299,6 +8302,7 @@
- 	continue;
- 
-       hdr = &elf_tdata (input)->dynsymtab_hdr;
-+      base_offset = elf_tdata (input)->base_offset;
- 
-       symcount = hdr->sh_size / bed->s->sizeof_sym;
-       if (elf_bad_symtab (input))
-@@ -8326,7 +8330,7 @@
-       if (extversym == NULL)
- 	goto error_ret;
- 
--      if (bfd_seek (input, versymhdr->sh_offset, SEEK_SET) != 0
-+      if (bfd_seek (input, versymhdr->sh_offset + base_offset, SEEK_SET) != 0
- 	  || (bfd_bread (extversym, versymhdr->sh_size, input)
- 	      != versymhdr->sh_size))
- 	{
-diff -ru binutils-2.19.1-orig/bfd/elfxx-mips.c binutils-2.19.1/bfd/elfxx-mips.c
---- binutils-2.19.1-orig/bfd/elfxx-mips.c	2008-08-18 14:14:04.000000000 -0400
-+++ binutils-2.19.1/bfd/elfxx-mips.c	2009-09-22 23:41:55.000000000 -0400
-@@ -1074,6 +1074,7 @@
- _bfd_mips_elf_read_ecoff_info (bfd *abfd, asection *section,
- 			       struct ecoff_debug_info *debug)
- {
-+  const bfd_vma base_offset = elf_tdata (abfd)->base_offset;
-   HDRR *symhdr;
-   const struct ecoff_debug_swap *swap;
-   char *ext_hdr;
-@@ -1103,7 +1104,7 @@
-       debug->ptr = bfd_malloc (amt);					\
-       if (debug->ptr == NULL)						\
- 	goto error_return;						\
--      if (bfd_seek (abfd, symhdr->offset, SEEK_SET) != 0		\
-+      if (bfd_seek (abfd, symhdr->offset + base_offset, SEEK_SET) != 0		\
- 	  || bfd_bread (debug->ptr, amt, abfd) != amt)			\
- 	goto error_return;						\
-     }
-diff -ru binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
+diff -ur binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
 --- binutils-2.19.1-orig/include/elf/external.h	2008-03-12 04:36:58.000000000 -0400
-+++ binutils-2.19.1/include/elf/external.h	2009-09-22 01:18:22.000000000 -0400
++++ binutils-2.19.1/include/elf/external.h	2009-09-24 01:44:58.000000000 -0400
 @@ -285,4 +285,35 @@
  
  #define GRP_ENTRY_SIZE		4
