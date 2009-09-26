@@ -25,6 +25,7 @@
 #endif
 
 extern const char *unlink_on_xfail;
+extern const char *fatelf_build_version;
 
 #define FATELF_WANT_MACHINE   (1 << 0)
 #define FATELF_WANT_OSABI     (1 << 1)

@@ -14,6 +14,60 @@
 const char *unlink_on_xfail = NULL;
 static uint8_t zerobuf[4096];
 
+
+#ifndef APPID
+#define APPID fatelf
+#endif
+
+#ifndef APPREV
+#define APPREV "???"
+#endif
+
+#if (defined __GNUC__)
+#   define VERSTR2(x) #x
+#   define VERSTR(x) VERSTR2(x)
+#   define COMPILERVER " " VERSTR(__GNUC__) "." VERSTR(__GNUC_MINOR__) "." VERSTR(__GNUC_PATCHLEVEL__)
+#elif (defined __SUNPRO_C)
+#   define VERSTR2(x) #x
+#   define VERSTR(x) VERSTR2(x)
+#   define COMPILERVER " " VERSTR(__SUNPRO_C)
+#elif (defined __VERSION__)
+#   define COMPILERVER " " __VERSION__
+#else
+#   define COMPILERVER ""
+#endif
+
+#ifndef __DATE__
+#define __DATE__ "(Unknown build date)"
+#endif
+
+#ifndef __TIME__
+#define __TIME__ "(Unknown build time)"
+#endif
+
+#ifndef COMPILER
+  #if (defined __GNUC__)
+    #define COMPILER "GCC"
+  #elif (defined _MSC_VER)
+    #define COMPILER "Visual Studio"
+  #elif (defined __SUNPRO_C)
+    #define COMPILER "Sun Studio"
+  #else
+    #error Please define your platform.
+  #endif
+#endif
+
+// macro mess so we can turn APPID and APPREV into a string literal...
+#define MAKEBUILDVERSTRINGLITERAL2(id, rev) \
+    #id ", revision " rev ", built " __DATE__ " " __TIME__ \
+    ", by " COMPILER COMPILERVER
+
+#define MAKEBUILDVERSTRINGLITERAL(id, rev) MAKEBUILDVERSTRINGLITERAL2(id, rev)
+
+const char *fatelf_build_version = MAKEBUILDVERSTRINGLITERAL(APPID, APPREV);
+
+
+
 // Report an error to stderr and terminate immediately with exit(1).
 void xfail(const char *fmt, ...)
 {
@@ -811,6 +865,11 @@ const char *fatelf_get_target_string(const FATELF_record *rec, const int wants)
 void xfatelf_init(int argc, const char **argv)
 {
     memset(zerobuf, '\0', sizeof (zerobuf));  // just in case.
+    if ((argc >= 2) && (strcmp(argv[1], "--version") == 0))
+    {
+        printf("%s\n", fatelf_build_version);
+        exit(0);
+    } // if
 } // xfatelf_init
 
 // end of fatelf-utils.c ...
