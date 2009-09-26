@@ -1,6 +1,6 @@
-diff -ur binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
+diff -ru binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
 --- binutils-2.19.1-orig/bfd/bfd.c	2008-08-16 23:12:49.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd.c	2009-09-25 13:30:16.000000000 -0400
++++ binutils-2.19.1/bfd/bfd.c	2009-09-25 15:26:27.000000000 -0400
 @@ -278,6 +278,10 @@
  .
  .  {* Set if this is a thin archive.  *}
@@ -12,9 +12,9 @@ diff -ur binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
  .};
  .
  */
-diff -ur binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
+diff -ru binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
 --- binutils-2.19.1-orig/bfd/bfd-in2.h	2008-08-20 19:28:57.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd-in2.h	2009-09-25 13:33:23.000000000 -0400
++++ binutils-2.19.1/bfd/bfd-in2.h	2009-09-25 15:26:27.000000000 -0400
 @@ -4823,6 +4823,10 @@
  
    /* Set if this is a thin archive.  */
@@ -26,9 +26,9 @@ diff -ur binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
  };
  
  typedef enum bfd_error
-diff -ur binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
+diff -ru binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
 --- binutils-2.19.1-orig/bfd/bfdio.c	2008-02-20 12:42:35.000000000 -0500
-+++ binutils-2.19.1/bfd/bfdio.c	2009-09-25 13:29:39.000000000 -0400
++++ binutils-2.19.1/bfd/bfdio.c	2009-09-25 15:26:27.000000000 -0400
 @@ -281,7 +281,7 @@
        bim = abfd->iostream;
  
@@ -57,9 +57,9 @@ diff -ur binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
        else
  	abfd->where += position;
      }
-diff -ur binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
+diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
 --- binutils-2.19.1-orig/bfd/elfcode.h	2008-08-01 08:21:28.000000000 -0400
-+++ binutils-2.19.1/bfd/elfcode.h	2009-09-25 13:50:00.000000000 -0400
++++ binutils-2.19.1/bfd/elfcode.h	2009-09-26 04:15:02.000000000 -0400
 @@ -479,7 +479,6 @@
     target vectors, most of which will not match.  We have to avoid leaving
     any side effects in ABFD, or any data it points to (like tdata), if the
@@ -198,9 +198,125 @@ diff -ur binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Check that the ELF e_machine field matches what this particular
       BFD format expects.  */
    if (ebd->elf_machine_code != i_ehdrp->e_machine
-diff -ur binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
+diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readelf.c
+--- binutils-2.19.1-orig/binutils/readelf.c	2008-09-17 05:00:44.000000000 -0400
++++ binutils-2.19.1/binutils/readelf.c	2009-09-26 04:05:36.000000000 -0400
+@@ -10957,6 +10957,98 @@
+ }
+ 
+ static int
++process_fatelf (char *file_name, FILE *file)
++{
++  FatElf_External_Hdr hdr;
++  FatElf_External_Record *rec;
++  int ver, recs;
++  size_t len;
++  int ret;
++  int i;
++
++  if (fread (&hdr, sizeof (hdr), 1, file) != 1)
++    {
++      error (_("%s: Failed to read FatELF header\n"), file_name);
++      return 1;
++    }
++
++  ver = (int) byte_get_little_endian(hdr.version, sizeof (hdr.version));
++  if (ver != FATELF_FORMAT_VERSION)
++    {
++      error (_("%s: Unrecognized FatELF format version %d\n"), file_name, ver);
++      return 1;
++    }
++
++  recs = (int) hdr.num_records;
++  printf(_("%s: FatELF version %d, %d records\n"), file_name, ver, recs);
++
++  len = sizeof(FatElf_External_Record) * recs;
++  rec = (FatElf_External_Record *) malloc(len);
++  if (rec == NULL)
++    {
++      error (_("Out of memory\n"));
++      return 1;
++    }
++
++  if (fread (rec, len, 1, file) != 1)
++    {
++      free(rec);
++      error (_("%s: Failed to read FatELF records\n"), file_name);
++      return 1;
++    }
++
++  for (i = 0; i < recs; i++)
++    {
++      FatElf_External_Record *r = &rec[i];
++      const int machine = (int) byte_get_little_endian(r->machine, 2);
++
++      archive_file_size = (unsigned long) byte_get_little_endian(r->size, 8);
++      archive_file_offset = (unsigned long) byte_get_little_endian(r->offset, 8);
++
++      printf(_("\n"));
++      printf(_("FatELF record #%d:\n"), i);
++
++      printf (_("  Machine:                           %s\n"),
++	      get_machine_name (machine));
++      printf (_("  OS/ABI:                            %s\n"),
++	      get_osabi_name (r->osabi));
++      printf (_("  ABI Version:                       %d\n"),
++	      r->osabi_version);
++      printf (_("  Class:                             %s\n"),
++	      get_elf_class (r->word_size));
++      printf (_("  Data:                              %s\n"),
++	      get_data_encoding (r->byte_order));
++      printf (_("  Offset:                            %lu\n"),
++	      archive_file_offset);
++      printf (_("  Size:                              %lu\n"),
++	      archive_file_size);
++      printf (_("\n"));
++
++      if (!do_archive_index)
++        {
++          if (fseek (file, archive_file_offset, SEEK_SET))
++            {
++              error (_("%s: Unable to seek to 0x%lx\n"), file_name,
++                     archive_file_offset);
++
++              free(rec);
++              return 1;
++            }
++
++          ret = process_object (file_name, file);
++          if (ret != 0)
++            {
++              free(rec);
++              return ret;
++            }
++        }
++    }
++
++  free(rec);
++  return 0;
++}
++
++static int
+ process_file (char *file_name)
+ {
+   FILE *file;
+@@ -10994,7 +11086,12 @@
+       return 1;
+     }
+ 
+-  if (memcmp (armag, ARMAG, SARMAG) == 0)
++  if (byte_get_little_endian((unsigned char *) armag, 4) == FATELF_MAGIC)
++    {
++      rewind (file);
++      ret = process_fatelf (file_name, file);
++    }
++  else if (memcmp (armag, ARMAG, SARMAG) == 0)
+     ret = process_archive (file_name, file);
+   else
+     {
+diff -ru binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
 --- binutils-2.19.1-orig/include/elf/external.h	2008-03-12 04:36:58.000000000 -0400
-+++ binutils-2.19.1/include/elf/external.h	2009-09-24 01:44:58.000000000 -0400
++++ binutils-2.19.1/include/elf/external.h	2009-09-26 04:04:27.000000000 -0400
 @@ -285,4 +285,35 @@
  
  #define GRP_ENTRY_SIZE		4
