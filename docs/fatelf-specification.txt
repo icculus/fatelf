@@ -2,8 +2,8 @@ FatELF specification, version 1.
 
 This specification is written in plain English, which is less efficient than
 just listing a handful of C structs. If you just want the structs, those are
-in fatelf.h. This file is here to hopefully clarify those data structures, and
-also allow for a complete clean-room implementation.
+in include/fatelf.h. This file is here to hopefully clarify those data
+structures, and also allow for a complete clean-room implementation.
 
 FatELF is a simple container format for storing multiple Executable and
 Linkable Format (ELF) binaries in a single file. The file format is as follows.
