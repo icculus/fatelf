@@ -16,14 +16,22 @@ ADD_DEFINITIONS(-DAPPREV="${FATELF_VERSION}")
 INCLUDE_DIRECTORIES(include)
 ADD_DEFINITIONS(-Wall -Werror)
 
-ADD_EXECUTABLE(fatelf-glue utils/fatelf-glue.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-info utils/fatelf-info.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-extract utils/fatelf-extract.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-replace utils/fatelf-replace.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-remove utils/fatelf-remove.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-verify utils/fatelf-verify.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-split utils/fatelf-split.c utils/fatelf-utils.c)
-ADD_EXECUTABLE(fatelf-validate utils/fatelf-validate.c utils/fatelf-utils.c)
+ADD_LIBRARY(fatelf-utils STATIC utils/fatelf-utils.c)
+
+MACRO(ADD_FATELF_EXECUTABLE _NAME)
+    ADD_EXECUTABLE(${_NAME} utils/${_NAME}.c)
+    TARGET_LINK_LIBRARIES(${_NAME} fatelf-utils)
+    INSTALL(TARGETS ${_NAME} RUNTIME DESTINATION bin)
+ENDMACRO(ADD_FATELF_EXECUTABLE)
+
+ADD_FATELF_EXECUTABLE(fatelf-glue)
+ADD_FATELF_EXECUTABLE(fatelf-info)
+ADD_FATELF_EXECUTABLE(fatelf-extract)
+ADD_FATELF_EXECUTABLE(fatelf-replace)
+ADD_FATELF_EXECUTABLE(fatelf-remove)
+ADD_FATELF_EXECUTABLE(fatelf-verify)
+ADD_FATELF_EXECUTABLE(fatelf-split)
+ADD_FATELF_EXECUTABLE(fatelf-validate)
 
 # end of CMakeLists.txt ...
 
