@@ -36,8 +36,8 @@ static int fatelf_info(const char *fname)
                 machine ? ": " : "", machine ? machine->desc : "");
         printf("  Offset %llu\n", (unsigned long long) rec->offset);
         printf("  Size %llu\n", (unsigned long long) rec->size);
-        printf("  Target string: '%s' or 'record%u'\n",
-               fatelf_get_target_string(rec, FATELF_WANT_EVERYTHING), i);
+        printf("  Target name: '%s' or 'record%u'\n",
+               fatelf_get_target_name(rec, FATELF_WANT_EVERYTHING), i);
     } // for
 
     xclose(fname, fd);

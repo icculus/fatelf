@@ -810,7 +810,7 @@ const char *fatelf_get_wordsize_target_name(const uint8_t wordsize)
 
 
 
-const char *fatelf_get_target_string(const FATELF_record *rec, const int wants)
+const char *fatelf_get_target_name(const FATELF_record *rec, const int wants)
 {
     // !!! FIXME: this code is sort of stinky.
     static char buffer[128];
@@ -859,7 +859,7 @@ const char *fatelf_get_target_string(const FATELF_record *rec, const int wants)
     } // if
 
     return buffer;
-} // fatelf_get_target_string
+} // fatelf_get_target_name
 
 
 void xfatelf_init(int argc, const char **argv)

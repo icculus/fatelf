@@ -12,7 +12,7 @@
 static char *make_filename(const char *base, const int wants,
                            const FATELF_record *rec)
 {
-    const char *target = fatelf_get_target_string(rec, wants);
+    const char *target = fatelf_get_target_name(rec, wants);
     const size_t len = strlen(base) + strlen(target) + 2;
     char *retval = (char *) xmalloc(len);
     snprintf(retval, len, "%s-%s", base, target);
