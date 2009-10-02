@@ -1,6 +1,6 @@
 diff -ru binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
 --- binutils-2.19.1-orig/bfd/bfd.c	2008-08-16 23:12:49.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd.c	2009-09-25 15:26:27.000000000 -0400
++++ binutils-2.19.1/bfd/bfd.c	2009-10-02 01:01:48.000000000 -0400
 @@ -278,6 +278,10 @@
  .
  .  {* Set if this is a thin archive.  *}
@@ -14,7 +14,7 @@ diff -ru binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
  */
 diff -ru binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
 --- binutils-2.19.1-orig/bfd/bfd-in2.h	2008-08-20 19:28:57.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd-in2.h	2009-09-25 15:26:27.000000000 -0400
++++ binutils-2.19.1/bfd/bfd-in2.h	2009-10-02 01:01:48.000000000 -0400
 @@ -4823,6 +4823,10 @@
  
    /* Set if this is a thin archive.  */
@@ -28,7 +28,7 @@ diff -ru binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
  typedef enum bfd_error
 diff -ru binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
 --- binutils-2.19.1-orig/bfd/bfdio.c	2008-02-20 12:42:35.000000000 -0500
-+++ binutils-2.19.1/bfd/bfdio.c	2009-09-25 15:26:27.000000000 -0400
++++ binutils-2.19.1/bfd/bfdio.c	2009-10-02 01:01:48.000000000 -0400
 @@ -281,7 +281,7 @@
        bim = abfd->iostream;
  
@@ -58,8 +58,8 @@ diff -ru binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
  	abfd->where += position;
      }
 diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
---- binutils-2.19.1-orig/bfd/elfcode.h	2008-08-01 08:21:28.000000000 -0400
-+++ binutils-2.19.1/bfd/elfcode.h	2009-09-26 04:15:02.000000000 -0400
+--- binutils-2.19.1-orig/bfd/elfcode.h	2009-10-02 15:47:18.000000000 -0400
++++ binutils-2.19.1/bfd/elfcode.h	2009-10-02 15:16:51.000000000 -0400
 @@ -479,7 +479,6 @@
     target vectors, most of which will not match.  We have to avoid leaving
     any side effects in ABFD, or any data it points to (like tdata), if the
@@ -93,14 +93,14 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
 +    {
 +      FatElf_External_Record *x_fatrec_ptr;
 +      unsigned char fatindex;
++      file_ptr seekpos = -((file_ptr) sizeof (x_ehdr));
 +
 +      if (bfd_getl16(&x_fathdr->version) != FATELF_FORMAT_VERSION)
 +	goto got_wrong_format_error;
 +
 +      /* reposition at the end of the FatELF header for record reading... */
-+      if (bfd_seek (abfd, (file_ptr) -sizeof (x_ehdr), SEEK_CUR) != 0)
-+	goto got_no_match;
-+      else if (bfd_seek (abfd, (file_ptr) sizeof (x_fathdr), SEEK_CUR) != 0)
++      seekpos += ((file_ptr) sizeof (*x_fathdr));
++      if (bfd_seek (abfd, seekpos, SEEK_CUR) != 0)
 +	goto got_no_match;
 +
 +      amt = sizeof (*x_fatrec_ptr) * x_fathdr->num_records;
@@ -200,7 +200,7 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    if (ebd->elf_machine_code != i_ehdrp->e_machine
 diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readelf.c
 --- binutils-2.19.1-orig/binutils/readelf.c	2008-09-17 05:00:44.000000000 -0400
-+++ binutils-2.19.1/binutils/readelf.c	2009-09-26 04:05:36.000000000 -0400
++++ binutils-2.19.1/binutils/readelf.c	2009-10-02 01:01:49.000000000 -0400
 @@ -10957,6 +10957,98 @@
  }
  
@@ -316,7 +316,7 @@ diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readel
      {
 diff -ru binutils-2.19.1-orig/elfcpp/elfcpp.h binutils-2.19.1/elfcpp/elfcpp.h
 --- binutils-2.19.1-orig/elfcpp/elfcpp.h	2008-06-12 12:58:40.000000000 -0400
-+++ binutils-2.19.1/elfcpp/elfcpp.h	2009-09-26 18:42:27.000000000 -0400
++++ binutils-2.19.1/elfcpp/elfcpp.h	2009-10-02 01:01:49.000000000 -0400
 @@ -75,6 +75,40 @@
    typedef int64_t Elf_Swxword;
  };
@@ -360,7 +360,7 @@ diff -ru binutils-2.19.1-orig/elfcpp/elfcpp.h binutils-2.19.1/elfcpp/elfcpp.h
  const int EI_MAG0 = 0;
 diff -ru binutils-2.19.1-orig/gold/object.cc binutils-2.19.1/gold/object.cc
 --- binutils-2.19.1-orig/gold/object.cc	2008-07-22 18:08:43.000000000 -0400
-+++ binutils-2.19.1/gold/object.cc	2009-09-27 14:25:12.000000000 -0400
++++ binutils-2.19.1/gold/object.cc	2009-10-02 01:01:49.000000000 -0400
 @@ -1824,6 +1824,98 @@
  namespace gold
  {
@@ -462,7 +462,7 @@ diff -ru binutils-2.19.1-orig/gold/object.cc binutils-2.19.1/gold/object.cc
  Object*
 diff -ru binutils-2.19.1-orig/gold/object.h binutils-2.19.1/gold/object.h
 --- binutils-2.19.1-orig/gold/object.h	2008-07-25 00:25:49.000000000 -0400
-+++ binutils-2.19.1/gold/object.h	2009-09-27 11:10:41.000000000 -0400
++++ binutils-2.19.1/gold/object.h	2009-10-02 01:01:49.000000000 -0400
 @@ -1808,6 +1808,15 @@
    location(size_t relnum, off_t reloffset) const;
  };
@@ -481,7 +481,7 @@ diff -ru binutils-2.19.1-orig/gold/object.h binutils-2.19.1/gold/object.h
  
 diff -ru binutils-2.19.1-orig/gold/readsyms.cc binutils-2.19.1/gold/readsyms.cc
 --- binutils-2.19.1-orig/gold/readsyms.cc	2008-08-07 13:02:11.000000000 -0400
-+++ binutils-2.19.1/gold/readsyms.cc	2009-09-27 11:46:10.000000000 -0400
++++ binutils-2.19.1/gold/readsyms.cc	2009-10-02 01:01:49.000000000 -0400
 @@ -161,17 +161,40 @@
  
    if (read_size >= 4)
@@ -526,7 +526,7 @@ diff -ru binutils-2.19.1-orig/gold/readsyms.cc binutils-2.19.1/gold/readsyms.cc
  
 diff -ru binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
 --- binutils-2.19.1-orig/include/elf/external.h	2008-03-12 04:36:58.000000000 -0400
-+++ binutils-2.19.1/include/elf/external.h	2009-09-26 04:04:27.000000000 -0400
++++ binutils-2.19.1/include/elf/external.h	2009-10-02 01:01:49.000000000 -0400
 @@ -285,4 +285,35 @@
  
  #define GRP_ENTRY_SIZE		4
