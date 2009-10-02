@@ -66,6 +66,9 @@ objdump -x ./hello
 objdump -x ./hello.so
 objdump -x ./hello-dlopen
 
+# Test gdb.
+gdb -x ../test.gdb ./hello
+
 # Link directly against a FatELF shared library (binutils test).
 gcc -m64 -O0 -ggdb3 -o hello-fatlink-amd64 ../hello.c hello.so -Wl,-rpath,.
 gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
