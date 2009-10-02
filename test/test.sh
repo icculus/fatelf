@@ -1,4 +1,12 @@
-#!/bin/sh
+#!/bin/bash
+
+AMD64=0
+if [ `uname -m` = "x86_64" ]; then
+    AMD64=1
+    echo "This is an x86_64 system."
+else
+    echo "This is NOT an x86_64 system."
+fi
 
 set -e
 set -x
@@ -65,7 +73,7 @@ gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
 # and, you know...run the programs themselves (glibc, kernel tests).
 ./hello
 ./hello-dlopen
-./hello-fatlink-amd64
+[ "x$AMD64" = "1" ] && ./hello-fatlink-amd64
 ./hello-fatlink-x86
 
 # end of test.sh ...
