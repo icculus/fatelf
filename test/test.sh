@@ -88,8 +88,8 @@ gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
 # and, you know...run the programs themselves (glibc, kernel tests).
 ./hello
 ./hello-dlopen
-[ "x$AMD64" = "1" ] && ./hello-fatlink-amd64
-[ "x$AMD64" = "1" ] && ./hello-fatlink-obj-amd64
+[ "x$AMD64" = "x1" ] && ./hello-fatlink-amd64
+[ "x$AMD64" = "x1" ] && ./hello-fatlink-obj-amd64
 ./hello-fatlink-x86
 ./hello-fatlink-obj-x86
 
