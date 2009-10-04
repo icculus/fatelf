@@ -20,7 +20,7 @@ gcc -o iself -s -O3 ../iself.c
 time for feh in bin boot etc lib opt sbin usr var ; do find /x86/$feh -type f -exec ./iself {} \; ; done |perl -w -pi -e 's/\A\/x86\///;' |grep -v "usr/lib64" |sort |uniq > ./binaries-32
 
 for feh in `cat binaries-32` ; do
-    mkdir -p --mode=0755 `dirname $feh`
+    mkdir -p --mode=0755 `dirname "/$feh"`
     if [ -f "/$feh" ]; then
         ./fatelf-glue tmp-fatelf "/$feh" "/x86/$feh"
         chmod --reference="/$feh" tmp-fatelf
