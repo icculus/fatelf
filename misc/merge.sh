@@ -36,5 +36,10 @@ for feh in `cat binaries-32` ; do
     fi
 done
 
+rm -rf /x86_64/lib32
+rm -rf /x86_64/lib64
+ln -s /lib /x86_64/lib32
+ln -s /lib /x86_64/lib64
+
 # end of merge.sh ...
 
