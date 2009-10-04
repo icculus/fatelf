@@ -22,7 +22,13 @@ time for feh in bin boot etc lib opt sbin usr var ; do find /x86/$feh -type f -e
 for feh in `cat binaries-32` ; do
     mkdir -p --mode=0755 `dirname "/$feh"`
     if [ -f "/$feh" ]; then
-        ./fatelf-glue tmp-fatelf "/$feh" "/x86/$feh"
+        FATELF=0
+        ./fatelf-validate "/$feh" && ISFATELF=1
+        if [ "x$ISFATELF" = "x1" ]; then
+            ./fatelf-replace tmp-fatelf "/$feh" "/x86/$feh"
+        else
+            ./fatelf-glue tmp-fatelf "/$feh" "/x86/$feh"
+        fi
         chmod --reference="/$feh" tmp-fatelf
         mv tmp-fatelf "/$feh"
     else
