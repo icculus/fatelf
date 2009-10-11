@@ -24,6 +24,12 @@
 #error Do not include this file outside of FatELF.
 #endif
 
+#ifdef __GNUC__
+#define FATELF_ISPRINTF(x,y) __attribute__((format (printf, x, y)))
+#else
+#define FATELF_ISPRINTF(x,y)
+#endif
+
 extern const char *unlink_on_xfail;
 extern const char *fatelf_build_version;
 
@@ -53,7 +59,7 @@ typedef struct fatelf_osabi_info
 // all functions that start with 'x' may call exit() on error!
 
 // Report an error to stderr and terminate immediately with exit(1).
-void xfail(const char *fmt, ...);
+void xfail(const char *fmt, ...) FATELF_ISPRINTF(1,2);
 
 // Wrap malloc() with an xfail(), so this returns memory or calls exit().
 // Memory is guaranteed to be initialized to zero.
