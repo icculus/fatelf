@@ -218,7 +218,7 @@ void xread_elf_header(const char *fname, const int fd, const uint64_t offset,
     xlseek(fname, fd, offset, SEEK_SET);
     xread(fname, fd, buf, sizeof (buf), 1);
     if (memcmp(magic, buf, sizeof (magic)) != 0)
-        xfail("'%s' is not an ELF binary");
+        xfail("'%s' is not an ELF binary", fname);
 
     record->osabi = buf[7];
     record->osabi_version = buf[8];
