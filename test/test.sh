@@ -19,16 +19,16 @@ make -j2
 
 # Build some test programs (hello world, hello world with shared library,
 #  hello world that uses dlopen() on shared library).
-gcc -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m32
-gcc -O0 -ggdb3 -c -o hello-x86.o ../hello.c hello.so -m32 -Wl,-rpath,.
-gcc -O0 -ggdb3 -o hello-x86 hello-x86.o hello.so -m32 -Wl,-rpath,.
-gcc -O0 -ggdb3 -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
+gcc --std=c99 -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m32
+gcc --std=c99 -O0 -ggdb3 -c -o hello-x86.o ../hello.c hello.so -m32 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -o hello-x86 hello-x86.o hello.so -m32 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
 mv hello.so hello-x86.so
 
-gcc -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m64
-gcc -O0 -ggdb3 -c -o hello-amd64.o ../hello.c hello.so -m64 -Wl,-rpath,.
-gcc -O0 -ggdb3 -o hello-amd64 hello-amd64.o hello.so -m64 -Wl,-rpath,.
-gcc -O0 -ggdb3 -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
+gcc --std=c99 -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m64
+gcc --std=c99 -O0 -ggdb3 -c -o hello-amd64.o ../hello.c hello.so -m64 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -o hello-amd64 hello-amd64.o hello.so -m64 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
 mv hello.so hello-amd64.so
 
 # Glue them into FatELF binaries.
@@ -78,12 +78,12 @@ objdump -x ./hello-dlopen
 gdb -x ../test.gdb ./hello
 
 # Link directly against a FatELF object file (binutils test).
-gcc -m64 -O0 -ggdb3 -o hello-fatlink-obj-amd64 hello.o hello.so -Wl,-rpath,.
-gcc -m32 -O0 -ggdb3 -o hello-fatlink-obj-x86 hello.o hello.so -Wl,-rpath,.
+gcc --std=c99 -m64 -O0 -ggdb3 -o hello-fatlink-obj-amd64 hello.o hello.so -Wl,-rpath,.
+gcc --std=c99 -m32 -O0 -ggdb3 -o hello-fatlink-obj-x86 hello.o hello.so -Wl,-rpath,.
 
 # Link directly against a FatELF shared library (binutils test).
-gcc -m64 -O0 -ggdb3 -o hello-fatlink-amd64 ../hello.c hello.so -Wl,-rpath,.
-gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
+gcc --std=c99 -m64 -O0 -ggdb3 -o hello-fatlink-amd64 ../hello.c hello.so -Wl,-rpath,.
+gcc --std=c99 -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
 
 # and, you know...run the programs themselves (glibc, kernel tests).
 ./hello
@@ -94,4 +94,5 @@ gcc -m32 -O0 -ggdb3 -o hello-fatlink-x86 ../hello.c hello.so -Wl,-rpath,.
 ./hello-fatlink-obj-x86
 
 # end of test.sh ...
+
 
