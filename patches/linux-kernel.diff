@@ -241,15 +241,6 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  			break;
  		}
  		elf_ppnt++;
-@@ -781,7 +885,7 @@
- 
- 		if (unlikely (elf_brk > elf_bss)) {
- 			unsigned long nbyte;
--	            
-+
- 			/* There was a PT_LOAD segment with p_memsz > p_filesz
- 			   before this one. Map anonymous pages, if needed,
- 			   and clear the area.  */
 @@ -832,7 +936,7 @@
  		}
  
@@ -259,15 +250,6 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  		if (BAD_ADDR(error)) {
  			send_sig(SIGKILL, current, 0);
  			retval = IS_ERR((void *)error) ?
-@@ -896,7 +1000,7 @@
- 	 * mapping in the interpreter, to make sure it doesn't wind
- 	 * up getting placed where the bss needs to go.
- 	 */
--	retval = set_brk(elf_bss, elf_brk);
-+	retval = set_brk(elf_bss + base_offset, elf_brk + base_offset);
- 	if (retval) {
- 		send_sig(SIGKILL, current, 0);
- 		goto out_free_dentry;
 @@ -913,7 +1017,7 @@
  		elf_entry = load_elf_interp(&loc->interp_elf_ex,
  					    interpreter,
