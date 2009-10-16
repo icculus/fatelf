@@ -37,6 +37,11 @@ ln -s ld-2.9.so /x86_64/lib/ld-linux.so.2
 rm -rf /x86/lib/udev/devices
 rm -rf /x86/usr/bin/X11
 
+# Make sure the home directory is gone.
+rm -rf /x86_64/home/fatelf
+cp -av /x86_64/etc/skel /x86_64/home/fatelf
+chown -R fatelf /x86_64/home/fatelf
+
 #cmake -DCMAKE_BUILD_TYPE=Release ../..
 #make -j2
 if [ "x$AMD64" = "x1" ]; then
