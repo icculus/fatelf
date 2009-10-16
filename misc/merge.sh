@@ -32,11 +32,11 @@ rm -rf /x86/usr/bin/X11
 # Make sure the home directory is gone.
 rm -rf /x86_64/home/fatelf
 cp -av /x86_64/etc/skel /x86_64/home/fatelf
-chown -R fatelf /x86_64/home/fatelf
+chown -R 1000 /x86_64/home/fatelf
 
-gcc -o fatelf-validate -O3 -s -I../include -I../utils ../utils/fatelf-validate.c ../utils/fatelf-utils.c
-gcc -o fatelf-replace -O3 -s -I../include -I../utils ../utils/fatelf-replace.c ../utils/fatelf-utils.c
-gcc -o fatelf-glue -O3 -s -I../include -I../utils ../utils/fatelf-glue.c ../utils/fatelf-utils.c
+gcc -o fatelf-validate -O3 -s -I../../include -I../../utils ../../utils/fatelf-validate.c ../../utils/fatelf-utils.c
+gcc -o fatelf-replace -O3 -s -I../../include -I../../utils ../../utils/fatelf-replace.c ../../utils/fatelf-utils.c
+gcc -o fatelf-glue -O3 -s -I../../include -I../../utils ../../utils/fatelf-glue.c ../../utils/fatelf-utils.c
 gcc -o iself -s -O3 ../iself.c
 gcc -o is32bitelf -s -O3 ../is32bitelf.c
 
@@ -78,7 +78,7 @@ umount /x86
 umount /x86_64
 
 # We disable fsck intervals...this is a demo, after all!
-time fsck.ext3 /dev/sda1
+time fsck.ext3 -D -C 0 -f /dev/sda1
 tune2fs -c 0 /dev/sda1
 tune2fs -i 0 /dev/sda1
 
