@@ -1,0 +1,54 @@
+- Start vmware workstation.
+
+Do this twice, for amd64 and x86, in separate VMs...
+
+- Create new VM.
+- Use Ubuntu 9.04 Desktop .iso, do easy install,
+  realname FatELF, username fatelf, password fatelf.
+- Log in after install, fire up a terminal.
+- Run update manager, get the latest and greatest.
+- System -> Administration -> Login Window -> Security -> Enable Automatic Login
+- sudo apt-get install build-essential cmake mercurial openssh-server gcc-multilib
+- hg clone http://hg.icculus.org/icculus/fatelf
+- cd fatelf
+- mkdir cmake-build
+- cd cmake-build
+- cmake -DCMAKE_BUILD_TYPE=Release ..
+- make
+- sudo make install
+- cd
+- scp the fatelf version of Ubuntu .debs to the box (or feel free to spend
+  hours patching and building things).
+- sudo dpkg -i *.deb
+- sudo apt-get autoremove
+-  (there's probably a better way to do this next thing.)
+- sudo mv /etc/apt/sources.list /etc/apt/DO_NOT_RUN_APT_UPDATES-sources.list-SERIOUSLY
+- sudo rm /boot/*-11-* /boot/memtest86+
+- Reboot to pick up new kernel.
+- cd fatelf/test
+- ./test.sh  (see if anything fails. It shouldn't!)
+- Shutdown and put this disk image aside for now.
+
+
+After both machines are good to go...
+
+- Add the x86 disk to the amd64 VM, so it's /dev/sdb and the amd64 one is sda.
+- Boot the amd64 virtual machine from a Ubuntu install .iso, 64 or 32 bit should do.
+- "Try Ubuntu without installing"
+- Fire up a terminal.
+- sudo mount -t ext3 -r /dev/sda1 /mnt
+- cp -av /mnt/home/fatelf/fatelf .
+- sudo umount /mnt
+- cd fatelf/misc
+- Consider setting a vmware snapshot, here.
+- sudo ./merge.sh
+- Pray everything worked, or all this time was wasted.
+- Shut down the VM, remove the x86 disk. Delete the x86 disk and VM.
+- Restart it, see if it worked.
+- Run vmware-toolbox and shrink the virtual disk.
+- Shutdown.
+- Zip up the vmware files and upload.
+
+
+
+
