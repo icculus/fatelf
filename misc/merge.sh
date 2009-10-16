@@ -5,14 +5,6 @@ if [ "x`id -u`" != "x0" ]; then
     exit 1
 fi
 
-AMD64=0
-if [ `uname -m` = "x86_64" ]; then
-    AMD64=1
-    echo "This is an x86_64 system."
-else
-    echo "This is NOT an x86_64 system."
-fi
-
 set -x
 set -e
 
@@ -42,14 +34,9 @@ rm -rf /x86_64/home/fatelf
 cp -av /x86_64/etc/skel /x86_64/home/fatelf
 chown -R fatelf /x86_64/home/fatelf
 
-#cmake -DCMAKE_BUILD_TYPE=Release ../..
-#make -j2
-if [ "x$AMD64" = "x1" ]; then
-   cp -av /x86_64/usr/local/bin/fatelf-* .
-else
-   cp -av /x86/usr/local/bin/fatelf-* .
-fi
-
+gcc -o fatelf-validate -O3 -s -I../include -I../utils ../utils/fatelf-validate.c ../utils/fatelf-utils.c
+gcc -o fatelf-replace -O3 -s -I../include -I../utils ../utils/fatelf-replace.c ../utils/fatelf-utils.c
+gcc -o fatelf-glue -O3 -s -I../include -I../utils ../utils/fatelf-glue.c ../utils/fatelf-utils.c
 gcc -o iself -s -O3 ../iself.c
 gcc -o is32bitelf -s -O3 ../is32bitelf.c
 
