@@ -69,10 +69,17 @@ for feh in `cat binaries-32` ; do
     fi
 done
 
+# We don't need /lib32 and /lib64, but symlink them to /lib just in case.
 rm -rf /x86_64/lib32
 rm -rf /x86_64/lib64
 ln -s /lib /x86_64/lib32
 ln -s /lib /x86_64/lib64
+
+mkdir -p /x86_64/boot/x86_64
+mkdir -p /x86_64/boot/x86
+mv /x86_64/boot/*-generic /x86_64/boot/x86_64/
+mv /x86/boot/*-generic /x86_64/boot/x86/
+cp ../grubmenu.txt /x86_64/boot/grub/menu.lst
 
 umount /x86
 umount /x86_64

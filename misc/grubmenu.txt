@@ -1,0 +1,15 @@
+default		0
+color cyan/blue white/blue
+
+title		Ubuntu 9.04 FatELF 32-bit, kernel 2.6.28-15-generic
+root		(hd0,0)
+kernel		/boot/x86/vmlinuz-2.6.28-15-generic root=/dev/sda1 ro quiet splash
+initrd		/boot/x86/initrd.img-2.6.28-15-generic
+quiet
+
+title		Ubuntu 9.04 FatELF 64-bit, kernel 2.6.28-15-generic
+root		(hd0,0)
+kernel		/boot/x86_64/vmlinuz-2.6.28-15-generic root=/dev/sda1 ro quiet splash
+initrd		/boot/x86_64/initrd.img-2.6.28-15-generic
+quiet
+
