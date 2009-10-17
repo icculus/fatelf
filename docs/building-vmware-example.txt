@@ -1,6 +1,9 @@
 - Start vmware workstation.
 
-Do this twice, for amd64 and x86, in separate VMs...
+Do this twice, for amd64 and x86, in separate VMs...Name the amd64 one
+ something like "Ubuntu 9.04 FatELF" (this is the one you'll publish) and
+ the other something like "Ubuntux86tmp" (this is the one you'll throw away
+ at the end).
 
 - Create new VM.
 - Use Ubuntu 9.04 Desktop .iso, do easy install,
