@@ -6,7 +6,7 @@ Do this twice, for amd64 and x86, in separate VMs...
 - Use Ubuntu 9.04 Desktop .iso, do easy install,
   realname FatELF, username fatelf, password fatelf.
 - Log in after install, fire up a terminal.
-- Run update manager, get the latest and greatest.
+- Run update manager, get the latest and greatest. Click "Restart Later"
 - System -> Administration -> Login Window -> Security -> Enable Automatic Login
 - sudo apt-get install build-essential cmake mercurial openssh-server gcc-multilib
 - hg clone http://hg.icculus.org/icculus/fatelf
@@ -30,7 +30,7 @@ Do this twice, for amd64 and x86, in separate VMs...
 - Shutdown and put this disk image aside for now.
 
 
-After both machines are good to go...
+After both virtual machines are good to go...
 
 - Add the x86 disk to the amd64 VM, so it's /dev/sdb and the amd64 one is sda.
 - Boot the amd64 virtual machine from a Ubuntu install .iso, 64 or 32 bit should do.
@@ -43,11 +43,22 @@ After both machines are good to go...
 - Consider setting a vmware snapshot, here.
 - sudo ./merge.sh
 - Pray everything worked, or all this time was wasted.
-- Shut down the VM, remove the x86 disk. Delete the x86 disk and VM.
+- Shut down the VM.
 - Remove the .iso ... switch back to physical CD/DVD drive.
-- Restart the amd64 VM, see if it worked. Should be able to choose x86 or amd64
-  from the grub menu now.
-- Run vmware-toolbox and shrink the virtual disk.
+- Restart the vm, edit the grub command line to boot from the x86 disk,
+  with root=/dev/sdb1.
+- Fire up a terminal.
+- sudo mount -t ext3 /dev/sda1 /mnt
+- Run sudo vmware-toolbox and shrink the virtual disk at /mnt.
+- sudo umount /mnt
+- Shut down.
+- Remove the x86 disk. Delete the x86 disk and VM.
+- Zip up the vmware files and start to upload.
+- Restart the remaining VM, make sure it worked, so you know if you have to
+  stop the upload. Should be able to choose x86 or amd64 from the grub menu
+  now.
 - Shutdown.
-- Zip up the vmware files and upload.
+- You're done!
+
+
 
