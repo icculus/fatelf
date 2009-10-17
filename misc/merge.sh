@@ -99,6 +99,7 @@ umount /x86
 umount /x86_64
 
 # We disable fsck intervals...this is a demo, after all!
+set +e
 time fsck.ext3 -D -C 0 -f /dev/sda1
 tune2fs -c 0 /dev/sda1
 tune2fs -i 0 /dev/sda1
