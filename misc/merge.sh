@@ -26,8 +26,13 @@ rm -f /x86_64/lib/ld-linux.so.2
 ln -s ld-2.9.so /x86_64/lib/ld-linux.so.2
 
 # other issues.
-rm -rf /x86/lib/udev/devices
-rm -rf /x86/usr/bin/X11
+if [ -d /x86/lib/udev/devices ] ; then
+    mv /x86/lib/udev/devices /x86/tmp_devices
+fi
+
+if [ -d /x86/usr/bin/X11 ]; then
+    mv /x86/usr/bin/X11 /x86/tmp_X11
+fi
 
 # Make sure the home directory is gone.
 rm -rf /x86_64/home/fatelf
@@ -78,8 +83,12 @@ ln -s /lib /x86_64/lib64
 mkdir -p /x86_64/boot/x86_64
 mkdir -p /x86_64/boot/x86
 mv /x86_64/boot/*-generic /x86_64/boot/x86_64/
-mv /x86/boot/*-generic /x86_64/boot/x86/
+cp -av /x86/boot/*-generic /x86_64/boot/x86/
 cp ../grubmenu.txt /x86_64/boot/grub/menu.lst
+
+# Put some things back.
+mv /x86/tmp_devices /x86/lib/udev/devices
+mv /x86/tmp_X11 /x86/usr/bin/X11
 
 umount /x86
 umount /x86_64
