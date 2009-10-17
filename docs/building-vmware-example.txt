@@ -44,11 +44,9 @@ After both machines are good to go...
 - sudo ./merge.sh
 - Pray everything worked, or all this time was wasted.
 - Shut down the VM, remove the x86 disk. Delete the x86 disk and VM.
-- Restart it, see if it worked.
+- Restart the amd64 VM, see if it worked. Should be able to choose x86 or amd64
+  from the grub menu now.
 - Run vmware-toolbox and shrink the virtual disk.
 - Shutdown.
 - Zip up the vmware files and upload.
-
-
-
 
