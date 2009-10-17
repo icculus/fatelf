@@ -80,11 +80,16 @@ rm -rf /x86_64/lib64
 ln -s /lib /x86_64/lib32
 ln -s /lib /x86_64/lib64
 
+# Set up the boot bits.
 mkdir -p /x86_64/boot/x86_64
 mkdir -p /x86_64/boot/x86
 mv /x86_64/boot/*-generic /x86_64/boot/x86_64/
 cp -av /x86/boot/*-generic /x86_64/boot/x86/
 cp ../grubmenu.txt /x86_64/boot/grub/menu.lst
+
+# Hack: force hald to regenerate cache on each run, since it writes a size_t
+#  in there that causes crashes when you switch between 64 and 32 bit mode.
+echo "rm -f /var/cache/hald/fdi-cache" >> /x86_64/etc/default/hal
 
 # Put some things back.
 mv /x86/tmp_devices /x86/lib/udev/devices
