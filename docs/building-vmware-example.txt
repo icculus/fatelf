@@ -39,7 +39,7 @@ After both virtual machines are good to go...
 - sudo mount -t ext3 -r /dev/sda1 /mnt
 - cp -av /mnt/home/fatelf/fatelf .
 - sudo umount /mnt
-- cd fatelf/misc
+- cd fatelf/merge
 - Consider setting a vmware snapshot, here.
 - sudo ./merge.sh
 - Pray everything worked, or all this time was wasted.
