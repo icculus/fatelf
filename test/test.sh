@@ -20,13 +20,13 @@ make -j2
 # Build some test programs (hello world, hello world with shared library,
 #  hello world that uses dlopen() on shared library).
 gcc --std=c99 -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m32
-gcc --std=c99 -O0 -ggdb3 -c -o hello-x86.o ../hello.c hello.so -m32 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -c -o hello-x86.o ../hello.c -m32 -Wl,-rpath,.
 gcc --std=c99 -O0 -ggdb3 -o hello-x86 hello-x86.o hello.so -m32 -Wl,-rpath,.
 gcc --std=c99 -O0 -ggdb3 -o hello-dlopen-x86 ../hello-dlopen.c -ldl -m32
 mv hello.so hello-x86.so
 
 gcc --std=c99 -O0 -ggdb3 -o hello.so ../hello-lib.c -shared -fPIC -m64
-gcc --std=c99 -O0 -ggdb3 -c -o hello-amd64.o ../hello.c hello.so -m64 -Wl,-rpath,.
+gcc --std=c99 -O0 -ggdb3 -c -o hello-amd64.o ../hello.c -m64 -Wl,-rpath,.
 gcc --std=c99 -O0 -ggdb3 -o hello-amd64 hello-amd64.o hello.so -m64 -Wl,-rpath,.
 gcc --std=c99 -O0 -ggdb3 -o hello-dlopen-amd64 ../hello-dlopen.c -ldl -m64
 mv hello.so hello-amd64.so
