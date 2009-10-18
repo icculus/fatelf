@@ -88,7 +88,7 @@ cp -av /x86/boot/*-generic /x86_64/boot/x86/
 cp ../grubmenu.txt /x86_64/boot/grub/menu.lst
 
 # Set the hostname.
-echo "fatelf" >> /x86_64/etc/hostname
+echo "fatelf" > /x86_64/etc/hostname
 
 # Hack: force hald to regenerate cache on each run, since it writes a size_t
 #  in there that causes crashes when you switch between 64 and 32 bit mode.
