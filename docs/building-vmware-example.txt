@@ -26,10 +26,12 @@ Do this twice, for amd64 and x86, in separate VMs...Name the amd64 one
 - sudo apt-get autoremove
 -  (there's probably a better way to do this next thing.)
 - sudo mv /etc/apt/sources.list /etc/apt/DO_NOT_RUN_APT_UPDATES-sources.list-SERIOUSLY
-- sudo rm /boot/*-11-* /boot/memtest86+
 - Reboot to pick up new kernel.
+- sudo /usr/bin/vmware-config-tools.pl
+-  (hit enter for all questions.)
 - cd fatelf/test
 - ./test.sh  (see if anything fails. It shouldn't!)
+- sudo rm -f /boot/*-11-* /boot/memtest86+
 - Shutdown and put this disk image aside for now.
 
 
@@ -37,7 +39,7 @@ After both virtual machines are good to go...
 
 - Add the x86 disk to the amd64 VM, so it's /dev/sdb and the amd64 one is sda.
 - Boot the amd64 virtual machine from a Ubuntu install .iso, 64 or 32 bit should do.
-- "Try Ubuntu without installing"
+- "Try Ubuntu without any change to your computer"
 - Fire up a terminal.
 - sudo mount -t ext3 -r /dev/sda1 /mnt
 - cp -av /mnt/home/fatelf/fatelf .
@@ -55,7 +57,7 @@ After both virtual machines are good to go...
 - Run sudo vmware-toolbox and shrink the virtual disk at /mnt.
 - sudo umount /mnt
 - Shut down.
-- Remove the x86 disk. Delete the x86 disk and VM.
+- Remove the x86 disk. Delete the x86 disk and VM. You're done with them.
 - Zip up the vmware files and start to upload.
 - Restart the remaining VM, make sure it worked, so you know if you have to
   stop the upload. Should be able to choose x86 or amd64 from the grub menu
