@@ -1,3 +1,6 @@
+
+Here's how to rebuild the vmware virtual machine from scratch.
+
 - Start vmware workstation.
 
 Do this twice, for amd64 and x86, in separate VMs...Name the amd64 one
@@ -20,8 +23,9 @@ Do this twice, for amd64 and x86, in separate VMs...Name the amd64 one
 - make
 - sudo make install
 - cd
-- scp the fatelf version of Ubuntu .debs to the box (or feel free to spend
-  hours patching and building things).
+- Download the fatelf version of Ubuntu .debs to the box (or feel free to spend
+  hours patching and building things):
+    They are available here: http://icculus.org/fatelf/vm/debs/
 - sudo dpkg -i *.deb
 - sudo apt-get autoremove
 -  (there's probably a better way to do this next thing.)
