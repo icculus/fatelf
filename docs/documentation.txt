@@ -228,5 +228,5 @@ Using the command line tools:
     not detect most forms of file corruption, either intentional or accidental.
 
 
-// end of README.txt ...
+// end of documentation.txt ...
 
