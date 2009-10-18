@@ -170,7 +170,7 @@ Using the command line tools:
    This takes the ELF binaries listed on the command line (as INPUT*), and
     glues them together into a FatELF binary named OUTPUT. The files' ELF
     headers are read to construct the proper FatELF data structures. It is an
-    error to try to glue to ELF binaries with the same target together, and
+    error to try to glue two ELF binaries with the same target together, and
     fatelf-glue will refuse to do so.
 
 
