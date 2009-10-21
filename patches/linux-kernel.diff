@@ -1,3 +1,20 @@
+
+
+
+Please note that this patch applies cleanly to Ubuntu 9.04's Linux kernel
+ sources (2.6.28-15-generic, specifically).
+
+Patching being submitted for consideration on the Linux kernel mailing list
+ are not kept here, and are patched against the current mainline (2.6.31-rc5
+ at the time of this writing). If you want those, get them from the mailing
+ list.
+
+You probably don't want the below patch unless you're experimenting with a
+ stable (and older) kernel.
+
+
+
+
 diff -ru linux-2.6.28-orig/arch/ia64/ia32/binfmt_elf32.c linux-2.6.28/arch/ia64/ia32/binfmt_elf32.c
 --- linux-2.6.28-orig/arch/ia64/ia32/binfmt_elf32.c	2008-12-24 18:26:37.000000000 -0500
 +++ linux-2.6.28/arch/ia64/ia32/binfmt_elf32.c	2009-10-02 00:10:12.000000000 -0400
