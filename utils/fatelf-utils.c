@@ -226,6 +226,8 @@ void xread_elf_header(const char *fname, const int fd, const uint64_t offset,
     record->byte_order = buf[5];
     record->reserved0 = 0;
     record->reserved1 = 0;
+    record->offset = 0;
+    record->size = 0;
 
     if ((record->word_size != FATELF_32BITS) &&
         (record->word_size != FATELF_64BITS))
