@@ -11,6 +11,10 @@
 #define FATELF_UTILS 1
 #include "fatelf-utils.h"
 
+#include <errno.h>
+#include <unistd.h>
+#include <stdarg.h>
+
 const char *unlink_on_xfail = NULL;
 static uint8_t zerobuf[4096];
 
