@@ -61,6 +61,8 @@ static int fatelf_replace(const char *out, const char *fname,
         offset = binary_offset + rec->size;
     } // for
 
+    xappend_junk(fname, fd, out, outfd, header);
+
     // Write the actual FatELF header now...
     xwrite_fatelf_header(out, outfd, header);
 

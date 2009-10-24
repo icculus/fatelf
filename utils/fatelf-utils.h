@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "fatelf.h"
 
@@ -89,6 +91,9 @@ void xcopyfile_range(const char *in, const int infd,
                      const char *out, const int outfd,
                      const uint64_t offset, const uint64_t size);
 
+// get the length of an open file in bytes.
+uint64_t xget_file_size(const char *fname, const int fd);
+
 // read the parts of an ELF header we care about.
 void xread_elf_header(const char *fname, const int fd, const uint64_t offset,
                       FATELF_record *rec);
@@ -104,8 +109,23 @@ void xwrite_fatelf_header(const char *fname, const int fd,
 // don't forget to free() the returned pointer!
 FATELF_header *xread_fatelf_header(const char *fname, const int fd);
 
+// Locate non-FatELF data at the end of a FatELF file fd, based on
+//  header header. Returns non-zero if junk found, and fills in offset and
+//  size.
+int xfind_junk(const char *fname, const int fd, const FATELF_header *header,
+               uint64_t *offset, uint64_t *size);
+
+// Write non-FatELF data at the end of FatELF file fd to current position in
+//  outfd, based on header header.
+void xappend_junk(const char *fname, const int fd,
+                  const char *out, const int outfd,
+                  const FATELF_header *header);
+
 // Align a value to the page size.
 uint64_t align_to_page(const uint64_t offset);
+
+// find the record closest to the end of the file. -1 on error!
+int find_furthest_record(const FATELF_header *header);
 
 const fatelf_machine_info *get_machine_by_id(const uint16_t id);
 const fatelf_machine_info *get_machine_by_name(const char *name);

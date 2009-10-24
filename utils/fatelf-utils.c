@@ -169,6 +169,15 @@ void xlseek(const char *fname, const int fd,
 } // xlseek
 
 
+uint64_t xget_file_size(const char *fname, const int fd)
+{
+    struct stat statbuf;
+    if (fstat(fd, &statbuf) == -1)
+        xfail("Failed to fstat '%s': %s", fname, strerror(errno));
+    return (uint64_t) statbuf.st_size;
+} // xget_file_size
+
+
 static uint8_t copybuf[256 * 1024];
 
 // xfail() on error.
@@ -771,6 +780,30 @@ int fatelf_record_matches(const FATELF_record *a, const FATELF_record *b)
 } // fatelf_record_matches
 
 
+int find_furthest_record(const FATELF_header *header)
+{
+    // there's nothing that says the records have to be in order, although
+    //  we probably _should_. Just in case, check them all.
+    const int total = (int) header->num_records;
+    uint64_t furthest = 0;
+    int retval = -1;
+    int i;
+
+    for (i = 0; i < total; i++)
+    {
+        const FATELF_record *rec = &header->records[i];
+        const uint64_t edge = rec->offset + rec->size;
+        if (edge > furthest)
+        {
+            retval = i;
+            furthest = edge;
+        } // if
+    } // for
+
+    return retval;
+} // find_furthest_record
+
+
 const char *fatelf_get_wordsize_string(const uint8_t wordsize)
 {
     if (wordsize == FATELF_32BITS)
@@ -862,6 +895,38 @@ const char *fatelf_get_target_name(const FATELF_record *rec, const int wants)
 
     return buffer;
 } // fatelf_get_target_name
+
+
+int xfind_junk(const char *fname, const int fd, const FATELF_header *header,
+               uint64_t *offset, uint64_t *size)
+{
+    const int furthest = find_furthest_record(header);
+
+    if (furthest >= 0)  // presumably, we failed elsewhere, but oh well.
+    {
+        const uint64_t fsize = xget_file_size(fname, fd);
+        const FATELF_record *rec = &header->records[furthest];
+        const uint64_t edge = rec->offset + rec->size;
+        if (fsize > edge)
+        {
+            *offset = edge;
+            *size = fsize - edge;
+            return 1;
+        } // if
+    } // if
+
+    return 0;
+} // xfind_junk
+
+
+void xappend_junk(const char *fname, const int fd,
+                  const char *out, const int outfd,
+                  const FATELF_header *header)
+{
+    uint64_t offset, size;
+    if (xfind_junk(fname, fd, header, &offset, &size))
+        xcopyfile_range(fname, fd, out, outfd, offset, size);
+} // xappend_junk
 
 
 void xfatelf_init(int argc, const char **argv)

@@ -21,6 +21,7 @@ static int fatelf_extract(const char *out, const char *fname,
     unlink_on_xfail = out;
 
     xcopyfile_range(fname, fd, out, outfd, rec->offset, rec->size);
+    xappend_junk(fname, fd, out, outfd, header);
     xclose(out, outfd);
     xclose(fname, fd);
     free(header);

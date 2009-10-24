@@ -116,6 +116,7 @@ static int fatelf_split(const char *fname)
         outfd = xopen(out, O_WRONLY | O_CREAT | O_TRUNC, 0755);
         unlink_on_xfail = out;
         xcopyfile_range(fname, fd, out, outfd, rec->offset, rec->size);
+        xappend_junk(fname, fd, out, outfd, header);
         xclose(out, outfd);
         unlink_on_xfail = NULL;
         free(out);

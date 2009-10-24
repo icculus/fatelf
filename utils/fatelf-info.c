@@ -14,9 +14,16 @@ static int fatelf_info(const char *fname)
     const int fd = xopen(fname, O_RDONLY, 0755);
     FATELF_header *header = xread_fatelf_header(fname, fd);
     unsigned int i = 0;
+    uint64_t junkoffset, junksize;
 
     printf("%s: FatELF format version %d\n", fname, (int) header->version);
     printf("%d records.\n", (int) header->num_records);
+
+    if (xfind_junk(fname, fd, header, &junkoffset, &junksize))
+    {
+        printf("%llu bytes of junk appended, starting at offset %llu.\n",
+               (unsigned long long) junksize, (unsigned long long) junkoffset);
+    } // if
 
     for (i = 0; i < header->num_records; i++)
     {
