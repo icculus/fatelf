@@ -4,8 +4,8 @@
 Please note that this patch applies cleanly to Ubuntu 9.04's Linux kernel
  sources (2.6.28-15-generic, specifically).
 
-Patching being submitted for consideration on the Linux kernel mailing list
- are not kept here, and are patched against the current mainline (2.6.31-rc5
+Patches being submitted for consideration on the Linux kernel mailing list
+ are not kept here, and are made against the current mainline (2.6.31-rc5
  at the time of this writing). If you want those, get them from the mailing
  list.
 
