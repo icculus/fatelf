@@ -39,8 +39,8 @@ static int fatelf_glue(const char *out, const char **bins, const int bincount)
         const int fd = xopen(fname, O_RDONLY, 0755);
         FATELF_record *record = &header->records[i];
 
-        record->offset = binary_offset;
         xread_elf_header(fname, fd, 0, record);
+        record->offset = binary_offset;
 
         // make sure we don't have a duplicate target.
         for (j = 0; j < i; j++)
