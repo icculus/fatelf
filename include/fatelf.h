@@ -47,7 +47,7 @@ typedef struct FATELF_header
     uint16_t version; /* latest is always FATELF_FORMAT_VERSION */
     uint8_t num_records;
     uint8_t reserved0;
-    FATELF_record records[];
+    FATELF_record records[0];  /* this is actually num_records items. */
 } FATELF_header;
 
 #endif
