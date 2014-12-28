@@ -56,9 +56,9 @@ The record format is as follows.
 Each record starts with an unsigned, 16-bit value that represents the machine
 architecture for this record. This field maps to e_machine in the ELF header.
 Next come four unsigned, 8-bit values. These represent, in order, the OSABI,
-OSABI version, byte order and word size of the referenced ELF binary. These
+OSABI version, word size and byte order of the referenced ELF binary. These
 fields map to e_ident[EI_OSABI], e_ident[EI_ABIVERSION], e_ident[EI_CLASS] and 
-e_ident[EI_DATA in the ELF header. Please note that the FatELF structures
+e_ident[EI_DATA] in the ELF header. Please note that the FatELF structures
 themselves are always little endian and aligned to Elf64 standards, no matter
 what these fields contain.
 
