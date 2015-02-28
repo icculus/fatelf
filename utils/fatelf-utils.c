@@ -667,6 +667,8 @@ static int xfind_fatelf_record_by_fields(const FATELF_header *header,
     int retval = -1;
     int i = 0;
 
+    memset(&rec, '\0', sizeof (rec));
+
     while (1)
     {
         const char ch = *ptr;
