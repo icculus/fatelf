@@ -1,8 +1,7 @@
-diff --git a/elf/dl-load.c b/elf/dl-load.c
-index 0b896d9..4a44c41 100644
---- a/elf/dl-load.c
-+++ b/elf/dl-load.c
-@@ -27,6 +27,7 @@
+diff -ruBb glibc-2.19-orig/elf/dl-load.c glibc-2.19/elf/dl-load.c
+--- glibc-2.19-orig/elf/dl-load.c	2015-02-28 06:52:37.000000000 -0800
++++ glibc-2.19/elf/dl-load.c	2015-02-28 06:51:36.442857109 -0800
+@@ -26,6 +26,7 @@
  #include <unistd.h>
  #include <ldsodefs.h>
  #include <bits/wordsize.h>
@@ -10,7 +9,7 @@ index 0b896d9..4a44c41 100644
  #include <sys/mman.h>
  #include <sys/param.h>
  #include <sys/stat.h>
-@@ -131,6 +132,7 @@ struct filebuf
+@@ -131,6 +132,7 @@
  # define FILEBUF_SIZE 832
  #endif
    char buf[FILEBUF_SIZE] __attribute__ ((aligned (__alignof (ElfW(Ehdr)))));
@@ -18,7 +17,7 @@ index 0b896d9..4a44c41 100644
  };
  
  /* This is the decomposed LD_LIBRARY_PATH search path.  */
-@@ -985,7 +987,7 @@ _dl_map_object_from_fd (const char *name, int fd, struct filebuf *fbp,
+@@ -1078,7 +1080,7 @@
    else
      {
        phdr = alloca (maplength);
@@ -27,7 +26,7 @@ index 0b896d9..4a44c41 100644
        if ((size_t) __libc_read (fd, (void *) phdr, maplength) != maplength)
  	{
  	  errstring = N_("cannot read file data");
-@@ -1196,7 +1198,7 @@ cannot allocate TLS data structures for initial thread");
+@@ -1293,7 +1295,7 @@
  	l->l_map_start = (ElfW(Addr)) __mmap ((void *) mappref, maplength,
  					      c->prot,
  					      MAP_COPY|MAP_FILE,
@@ -36,7 +35,7 @@ index 0b896d9..4a44c41 100644
  	if (__builtin_expect ((void *) l->l_map_start == MAP_FAILED, 0))
  	  {
  	  map_error:
-@@ -1247,7 +1249,7 @@ cannot allocate TLS data structures for initial thread");
+@@ -1344,7 +1346,7 @@
  	    && (__mmap ((void *) (l->l_addr + c->mapstart),
  			c->mapend - c->mapstart, c->prot,
  			MAP_FIXED|MAP_COPY|MAP_FILE,
@@ -45,16 +44,16 @@ index 0b896d9..4a44c41 100644
  		== MAP_FAILED))
  	  goto map_error;
  
-@@ -1551,6 +1553,85 @@ print_search_path (struct r_search_path_elem **list,
-     _dl_debug_printf_c ("\t\t(%s)\n", what);
+@@ -1862,6 +1864,85 @@
  }
+ 
  
 +#define ELF32_CLASS ELFCLASS32
 +#define ELF64_CLASS ELFCLASS64
 +#ifndef VALID_ELF_HEADER
 +# define VALID_ELF_HEADER(hdr,exp,size)	(memcmp (hdr, exp, size) == 0)
 +# define VALID_ELF_OSABI(osabi)		(osabi == ELFOSABI_SYSV)
-+# define VALID_ELF_ABIVERSION(ver)	(ver == 0)
++# define VALID_ELF_ABIVERSION(osabi,ver)	(ver == 0)
 +#endif
 +#if BYTE_ORDER == BIG_ENDIAN
 +#define le16_to_cpu(x) __bswap_16(x)
@@ -110,7 +109,7 @@ index 0b896d9..4a44c41 100644
 +      /* if we fail a test here, we just jump to the next record. */
 +      if (!VALID_ELF_OSABI(record->osabi))
 +	continue;
-+      else if (!VALID_ELF_ABIVERSION(record->osabi_version))
++      else if (!VALID_ELF_ABIVERSION(record->osabi, record->osabi_version))
 +	continue;
 +      else if (!elf_machine_matches_host(&ehdr))
 +	continue;
@@ -131,34 +130,18 @@ index 0b896d9..4a44c41 100644
  /* Open a file and verify it is an ELF file for this architecture.  We
     ignore only ELF files for other architectures.  Non-ELF files and
     ELF files with different header information cause fatal errors since
-@@ -1561,13 +1642,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
- 	     int whatcode, bool *found_other_class, bool free_name)
- {
-   /* This is the expected ELF header.  */
--#define ELF32_CLASS ELFCLASS32
--#define ELF64_CLASS ELFCLASS64
--#ifndef VALID_ELF_HEADER
--# define VALID_ELF_HEADER(hdr,exp,size)	(memcmp (hdr, exp, size) == 0)
--# define VALID_ELF_OSABI(osabi)		(osabi == ELFOSABI_SYSV)
--# define VALID_ELF_ABIVERSION(ver)	(ver == 0)
--#elif defined MORE_ELF_HEADER_DATA
-+#if defined MORE_ELF_HEADER_DATA
-   MORE_ELF_HEADER_DATA;
- #endif
-   static const unsigned char expected[EI_PAD] =
-@@ -1632,6 +1707,11 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -1952,6 +2033,10 @@
+ 	}
+       while (__builtin_expect (fbp->len < sizeof (ElfW(Ehdr)), 0));
  
-       /* This is where the ELF header is loaded.  */
-       assert (sizeof (fbp->buf) > sizeof (ElfW(Ehdr)));
-+
 +      errstring = examine_fatelf(fd, fbp);
 +      if (errstring)
 +        goto call_lose;
 +
+       /* This is where the ELF header is loaded.  */
        ehdr = (ElfW(Ehdr) *) fbp->buf;
  
-       /* Now run the tests.  */
-@@ -1727,7 +1807,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -2073,7 +2158,7 @@
        else
  	{
  	  phdr = alloca (maplength);
@@ -167,7 +150,7 @@ index 0b896d9..4a44c41 100644
  	  if ((size_t) __libc_read (fd, (void *) phdr, maplength) != maplength)
  	    {
  	    read_error:
-@@ -1748,7 +1828,7 @@ open_verify (const char *name, struct filebuf *fbp, struct link_map *loader,
+@@ -2095,7 +2180,7 @@
  	    else
  	      {
  		abi_note = alloca (size);
@@ -176,11 +159,10 @@ index 0b896d9..4a44c41 100644
  		if (__libc_read (fd, (void *) abi_note, size) != size)
  		  goto read_error;
  	      }
-diff --git a/elf/elf.h b/elf/elf.h
-index ce6de07..d4216b0 100644
---- a/elf/elf.h
-+++ b/elf/elf.h
-@@ -61,6 +61,34 @@ typedef uint16_t Elf64_Section;
+diff -ruBb glibc-2.19-orig/elf/elf.h glibc-2.19/elf/elf.h
+--- glibc-2.19-orig/elf/elf.h	2015-02-28 06:52:37.000000000 -0800
++++ glibc-2.19/elf/elf.h	2015-02-28 06:49:49.410853919 -0800
+@@ -59,6 +59,34 @@
  typedef Elf32_Half Elf32_Versym;
  typedef Elf64_Half Elf64_Versym;
  

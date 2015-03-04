@@ -1,54 +1,30 @@
 
 
-
-Please note that this patch applies cleanly to Ubuntu 9.04's Linux kernel
- sources (2.6.28-15-generic, specifically).
-
+Please note that this patch applies cleanly to Ubuntu 14.10's Linux kernel
+ sources (3.16, specifically).
+          
 Patches being submitted for consideration on the Linux kernel mailing list
- are not kept here, and are made against the current mainline (2.6.31-rc5
- at the time of this writing). If you want those, get them from the mailing
+ are not kept here, and are made against the current mainline (3.19 at the
+ time of this writing). If you want those, get them from the mailing
  list.
 
 You probably don't want the below patch unless you're experimenting with a
  stable (and older) kernel.
 
 
-
-
-diff -ru linux-2.6.28-orig/arch/ia64/ia32/binfmt_elf32.c linux-2.6.28/arch/ia64/ia32/binfmt_elf32.c
---- linux-2.6.28-orig/arch/ia64/ia32/binfmt_elf32.c	2008-12-24 18:26:37.000000000 -0500
-+++ linux-2.6.28/arch/ia64/ia32/binfmt_elf32.c	2009-10-02 00:10:12.000000000 -0400
-@@ -223,12 +223,12 @@
+diff -ruBb linux-3.16.0-orig/fs/binfmt_elf.c linux-3.16.0/fs/binfmt_elf.c
+--- linux-3.16.0-orig/fs/binfmt_elf.c	2014-08-03 15:25:02.000000000 -0700
++++ linux-3.16.0/fs/binfmt_elf.c	2015-03-01 20:04:12.561648371 -0800
+@@ -47,7 +47,7 @@
  
- static unsigned long
- elf32_map(struct file *filep, unsigned long addr, struct elf_phdr *eppnt,
--		int prot, int type, unsigned long unused)
-+		int prot, int type, unsigned long unused, unsigned long base)
- {
- 	unsigned long pgoff = (eppnt->p_vaddr) & ~IA32_PAGE_MASK;
- 
- 	return ia32_do_mmap(filep, (addr & IA32_PAGE_MASK), eppnt->p_filesz + pgoff, prot, type,
--			    eppnt->p_offset - pgoff);
-+			    (eppnt->p_offset + base) - pgoff);
- }
- 
- #define cpu_uses_ia32el()	(local_cpu_data->family > 0x1f)
-diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
---- linux-2.6.28-orig/fs/binfmt_elf.c	2009-10-03 02:11:23.000000000 -0400
-+++ linux-2.6.28/fs/binfmt_elf.c	2009-10-02 18:42:52.000000000 -0400
-@@ -44,8 +44,9 @@
- 
- static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs);
- static int load_elf_library(struct file *);
--static unsigned long elf_map(struct file *, unsigned long, struct elf_phdr *,
+ static int load_elf_binary(struct linux_binprm *bprm);
+ static unsigned long elf_map(struct file *, unsigned long, struct elf_phdr *,
 -				int, int, unsigned long);
-+static unsigned long 
-+elf_map(struct file *, unsigned long, struct elf_phdr *,
 +				int, int, unsigned long, unsigned long);
  
- /*
-  * If we don't support core dumping, then supply a NULL so we
-@@ -314,7 +315,7 @@
+ #ifdef CONFIG_USELIB
+ static int load_elf_library(struct file *);
+@@ -334,7 +334,7 @@
  
  static unsigned long elf_map(struct file *filep, unsigned long addr,
  		struct elf_phdr *eppnt, int prot, int type,
@@ -57,25 +33,22 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  {
  	unsigned long map_addr;
  	unsigned long size = eppnt->p_filesz + ELF_PAGEOFFSET(eppnt->p_vaddr);
-@@ -338,11 +339,14 @@
+@@ -357,11 +357,12 @@
  	*/
  	if (total_size) {
  		total_size = ELF_PAGEALIGN(total_size);
--		map_addr = do_mmap(filep, addr, total_size, prot, type, off);
-+		map_addr = do_mmap(filep, addr, total_size, prot, type,
+-		map_addr = vm_mmap(filep, addr, total_size, prot, type, off);
++		map_addr = vm_mmap(filep, addr, total_size, prot, type,
 +		                   off + base_offset);
  		if (!BAD_ADDR(map_addr))
- 			do_munmap(current->mm, map_addr+size, total_size-size);
--	} else
--		map_addr = do_mmap(filep, addr, size, prot, type, off);
-+	} else {
-+		map_addr = do_mmap(filep, addr, size, prot, type,
-+		                   off + base_offset);
-+	}
+ 			vm_munmap(map_addr+size, total_size-size);
+ 	} else
+-		map_addr = vm_mmap(filep, addr, size, prot, type, off);
++		map_addr = vm_mmap(filep, addr, size, prot, type, off + base_offset);
  
- 	up_write(&current->mm->mmap_sem);
  	return(map_addr);
-@@ -376,7 +380,7 @@
+ }
+@@ -394,7 +395,7 @@
  
  static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
  		struct file *interpreter, unsigned long *interp_map_addr,
@@ -84,16 +57,16 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  {
  	struct elf_phdr *elf_phdata;
  	struct elf_phdr *eppnt;
-@@ -414,7 +418,7 @@
+@@ -432,7 +433,7 @@
  	if (!elf_phdata)
  		goto out;
  
 -	retval = kernel_read(interpreter, interp_elf_ex->e_phoff,
 +	retval = kernel_read(interpreter, interp_elf_ex->e_phoff + base_offset,
- 			     (char *)elf_phdata,size);
+ 			     (char *)elf_phdata, size);
  	error = -EIO;
  	if (retval != size) {
-@@ -450,7 +454,8 @@
+@@ -468,7 +469,8 @@
  				load_addr = -vaddr;
  
  			map_addr = elf_map(interpreter, load_addr + vaddr,
@@ -103,7 +76,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  			total_size = 0;
  			if (!*interp_map_addr)
  				*interp_map_addr = map_addr;
-@@ -555,6 +560,94 @@
+@@ -568,6 +570,94 @@
  #endif
  }
  
@@ -195,11 +168,11 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
 +}
 +
 +
- static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ static int load_elf_binary(struct linux_binprm *bprm)
  {
  	struct file *interpreter = NULL; /* to shut gcc up */
-@@ -567,6 +660,8 @@
- 	int elf_exec_fileno;
+@@ -579,6 +669,8 @@
+ 	unsigned long elf_bss, elf_brk;
  	int retval, i;
  	unsigned int size;
 +	unsigned long base_offset = 0;
@@ -207,14 +180,12 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  	unsigned long elf_entry;
  	unsigned long interp_load_addr = 0;
  	unsigned long start_code, end_code, start_data, end_data;
-@@ -583,9 +678,12 @@
- 		retval = -ENOMEM;
+@@ -596,8 +688,11 @@
  		goto out_ret;
  	}
--	
+ 	
 -	/* Get the exec-header */
 -	loc->elf_ex = *((struct elfhdr *)bprm->buf);
-+
 +	retval = examine_fatelf(bprm->file, bprm->filename, bprm->buf,
 +	                        BINPRM_BUF_SIZE, &base_offset, &loc->elf_ex);
 +	if (unlikely(retval < 0)) {
@@ -223,7 +194,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  
  	retval = -ENOEXEC;
  	/* First of all, some simple consistency checks */
-@@ -611,7 +709,7 @@
+@@ -623,7 +718,7 @@
  	if (!elf_phdata)
  		goto out;
  
@@ -232,9 +203,9 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  			     (char *)elf_phdata, size);
  	if (retval != size) {
  		if (retval >= 0)
-@@ -651,7 +749,8 @@
+@@ -657,7 +752,8 @@
  			if (!elf_interpreter)
- 				goto out_free_file;
+ 				goto out_free_ph;
  
 -			retval = kernel_read(bprm->file, elf_ppnt->p_offset,
 +			retval = kernel_read(bprm->file,
@@ -242,7 +213,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  					     elf_interpreter,
  					     elf_ppnt->p_filesz);
  			if (retval != elf_ppnt->p_filesz) {
-@@ -706,8 +805,13 @@
+@@ -690,8 +786,13 @@
  				goto out_free_dentry;
  			}
  
@@ -258,7 +229,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  			break;
  		}
  		elf_ppnt++;
-@@ -832,7 +936,7 @@
+@@ -818,7 +919,7 @@
  		}
  
  		error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
@@ -267,7 +238,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  		if (BAD_ADDR(error)) {
  			send_sig(SIGKILL, current, 0);
  			retval = IS_ERR((void *)error) ?
-@@ -913,7 +1017,7 @@
+@@ -899,7 +1000,7 @@
  		elf_entry = load_elf_interp(&loc->interp_elf_ex,
  					    interpreter,
  					    &interp_map_addr,
@@ -276,7 +247,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  		if (!IS_ERR((void *)elf_entry)) {
  			/*
  			 * load_elf_interp() returns relocation
-@@ -1032,11 +1136,19 @@
+@@ -1016,11 +1117,19 @@
  	unsigned long elf_bss, bss, len;
  	int retval, error, i, j;
  	struct elfhdr elf_ex;
@@ -299,7 +270,7 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  
  	if (memcmp(elf_ex.e_ident, ELFMAG, SELFMAG) != 0)
  		goto out;
-@@ -1058,7 +1170,8 @@
+@@ -1042,7 +1151,8 @@
  
  	eppnt = elf_phdata;
  	error = -ENOEXEC;
@@ -309,21 +280,21 @@ diff -ru linux-2.6.28-orig/fs/binfmt_elf.c linux-2.6.28/fs/binfmt_elf.c
  	if (retval != j)
  		goto out_free_ph;
  
-@@ -1080,7 +1193,7 @@
+@@ -1063,7 +1173,7 @@
  			PROT_READ | PROT_WRITE | PROT_EXEC,
  			MAP_FIXED | MAP_PRIVATE | MAP_DENYWRITE,
  			(eppnt->p_offset -
 -			 ELF_PAGEOFFSET(eppnt->p_vaddr)));
 +			 ELF_PAGEOFFSET(eppnt->p_vaddr)) + base_offset);
- 	up_write(&current->mm->mmap_sem);
  	if (error != ELF_PAGESTART(eppnt->p_vaddr))
  		goto out_free_ph;
-diff -ru linux-2.6.28-orig/include/linux/elf.h linux-2.6.28/include/linux/elf.h
---- linux-2.6.28-orig/include/linux/elf.h	2008-12-24 18:26:37.000000000 -0500
-+++ linux-2.6.28/include/linux/elf.h	2009-10-02 00:10:12.000000000 -0400
-@@ -188,6 +188,30 @@
- } Elf64_Sym;
  
+diff -ruBb linux-3.16.0-orig/include/uapi/linux/elf.h linux-3.16.0/include/uapi/linux/elf.h
+--- linux-3.16.0-orig/include/uapi/linux/elf.h	2014-08-03 15:25:02.000000000 -0700
++++ linux-3.16.0/include/uapi/linux/elf.h	2015-03-01 20:02:48.341645861 -0800
+@@ -414,4 +414,27 @@
+   Elf64_Word n_type;	/* Content type */
+ } Elf64_Nhdr;
  
 +/* FatELF (multiple ELF binaries in one file) support */
 +#define FATELF_MAGIC (0x1F0E70FA)
@@ -348,15 +319,22 @@ diff -ru linux-2.6.28-orig/include/linux/elf.h linux-2.6.28/include/linux/elf.h
 +  fatelf_record records[];
 +} fatelf_hdr;
 +
-+
- #define EI_NIDENT	16
+ #endif /* _UAPI_LINUX_ELF_H */
+diff -ruBb linux-3.16.0-orig/kernel/module.c linux-3.16.0/kernel/module.c
+--- linux-3.16.0-orig/kernel/module.c	2015-03-01 19:57:06.000000000 -0800
++++ linux-3.16.0/kernel/module.c	2015-03-01 20:02:48.341645861 -0800
+@@ -172,7 +172,8 @@
+ EXPORT_SYMBOL(unregister_module_notifier);
  
- typedef struct elf32_hdr{
-diff -ru linux-2.6.28-orig/kernel/module.c linux-2.6.28/kernel/module.c
---- linux-2.6.28-orig/kernel/module.c	2009-10-03 02:11:23.000000000 -0400
-+++ linux-2.6.28/kernel/module.c	2009-10-03 02:08:53.000000000 -0400
-@@ -1833,13 +1833,69 @@
- 	return ret;
+ struct load_info {
+-	Elf_Ehdr *hdr;
++	Elf_Ehdr *hdr_alloc;  /* returned from vmalloc */
++	Elf_Ehdr *hdr;  /* adjusted hdr_alloc for FatELF */
+ 	unsigned long len;
+ 	Elf_Shdr *sechdrs;
+ 	char *secstrings, *strtab;
+@@ -2485,6 +2486,61 @@
+ 	return 0;
  }
  
 +/*
@@ -414,68 +392,80 @@ diff -ru linux-2.6.28-orig/kernel/module.c linux-2.6.28/kernel/module.c
 +	return NULL;  /* no binaries we could use. */
 +}
 +
- /* Allocate and load the module: note that size of section 0 is always
-    zero, and we rely on this for optional sections. */
- static noinline struct module *load_module(void __user *umod,
- 				  unsigned long len,
- 				  const char __user *uargs)
- {
--	Elf_Ehdr *hdr;
-+	Elf_Ehdr *hdr_alloc;  /* returned from vmalloc */
-+	Elf_Ehdr *hdr;  /* adjusted hdr_alloc for FatELF */
- 	Elf_Shdr *sechdrs;
- 	char *secstrings, *args, *modmagic, *strtab = NULL;
- 	char *staging;
-@@ -1863,13 +1919,19 @@
+ /* Sets info->hdr and info->len. */
+ static int copy_module_from_user(const void __user *umod, unsigned long len,
+ 				  struct load_info *info)
+@@ -2500,15 +2556,22 @@
+ 		return err;
  
  	/* Suck in entire file: we'll want most of it. */
- 	/* vmalloc barfs on "unusual" numbers.  Check here */
--	if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
-+	if (len > 64 * 1024 * 1024 || (hdr_alloc = vmalloc(len)) == NULL)
- 		return ERR_PTR(-ENOMEM);
--	if (copy_from_user(hdr, umod, len) != 0) {
-+	if (copy_from_user(hdr_alloc, umod, len) != 0) {
- 		err = -EFAULT;
- 		goto free_hdr;
+-	info->hdr = vmalloc(info->len);
+-	if (!info->hdr)
++	info->hdr_alloc = vmalloc(info->len);
++	if (!info->hdr_alloc)
+ 		return -ENOMEM;
+ 
+-	if (copy_from_user(info->hdr, umod, info->len) != 0) {
+-		vfree(info->hdr);
++	if (copy_from_user(info->hdr_alloc, umod, info->len) != 0) {
++		vfree(info->hdr_alloc);
+ 		return -EFAULT;
  	}
  
-+	hdr = examine_fatelf_module((unsigned char *) hdr_alloc, len);
-+	if (hdr == NULL) {
-+		err = -ENOEXEC;
-+		goto free_hdr;
++	/* returns the actual ELF header (whether or not this was FatELF). */
++	info->hdr = examine_fatelf_module((unsigned char *) info->hdr_alloc, info->len);
++	if (info->hdr == NULL) {
++		vfree(info->hdr_alloc);
++		return -ENOEXEC;
 +	}
 +
- 	/* Sanity checks against insmoding binaries or wrong arch,
-            weird elf version */
- 	if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0
-@@ -2255,7 +2317,7 @@
- 					    sechdrs[unwindex].sh_size);
+ 	return 0;
+ }
  
- 	/* Get rid of temporary copy */
--	vfree(hdr);
-+	vfree(hdr_alloc);
+@@ -2543,18 +2606,18 @@
+ 		goto out;
+ 	}
  
- 	/* Done! */
- 	return mod;
-@@ -2278,7 +2340,7 @@
-  free_mod:
- 	kfree(args);
-  free_hdr:
--	vfree(hdr);
-+	vfree(hdr_alloc);
- 	return ERR_PTR(err);
+-	info->hdr = vmalloc(stat.size);
+-	if (!info->hdr) {
++	info->hdr_alloc = vmalloc(stat.size);
++	if (!info->hdr_alloc) {
+ 		err = -ENOMEM;
+ 		goto out;
+ 	}
  
-  truncated:
---- linux-2.6.28-orig/fs/Makefile	2008-12-24 18:26:37.000000000 -0500
-+++ linux-2.6.28/fs/Makefile	2009-10-14 23:32:11.000000000 -0400
-@@ -41,8 +41,9 @@
- # binfmt_script is always there
- obj-y				+= binfmt_script.o
+ 	pos = 0;
+ 	while (pos < stat.size) {
+-		bytes = kernel_read(f.file, pos, (char *)(info->hdr) + pos,
++		bytes = kernel_read(f.file, pos, (char *)(info->hdr_alloc) + pos,
+ 				    stat.size - pos);
+ 		if (bytes < 0) {
+-			vfree(info->hdr);
++			vfree(info->hdr_alloc);
+ 			err = bytes;
+ 			goto out;
+ 		}
+@@ -2564,6 +2627,14 @@
+ 	}
+ 	info->len = pos;
  
--obj-$(CONFIG_BINFMT_ELF)	+= binfmt_elf.o
-+# List compat_* first, so they insert at end of the list, and are tried last.
- obj-$(CONFIG_COMPAT_BINFMT_ELF)	+= compat_binfmt_elf.o
-+obj-$(CONFIG_BINFMT_ELF)	+= binfmt_elf.o
- obj-$(CONFIG_BINFMT_ELF_FDPIC)	+= binfmt_elf_fdpic.o
- obj-$(CONFIG_BINFMT_SOM)	+= binfmt_som.o
- obj-$(CONFIG_BINFMT_FLAT)	+= binfmt_flat.o
++	/* returns the actual ELF header (whether or not this was FatELF). */
++	info->hdr = examine_fatelf_module((unsigned char *) info->hdr_alloc, info->len);
++	if (info->hdr == NULL) {
++		vfree(info->hdr_alloc);
++		err = -ENOEXEC;
++		goto out;
++	}
++
+ out:
+ 	fdput(f);
+ 	return err;
+@@ -2571,7 +2642,7 @@
+ 
+ static void free_copy(struct load_info *info)
+ {
+-	vfree(info->hdr);
++	vfree(info->hdr_alloc);
+ }
+ 
+ static int rewrite_section_headers(struct load_info *info, int flags)

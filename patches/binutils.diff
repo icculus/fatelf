@@ -1,54 +1,45 @@
-diff -ru binutils-2.19.1-orig/bfd/bfd.c binutils-2.19.1/bfd/bfd.c
---- binutils-2.19.1-orig/bfd/bfd.c	2008-08-16 23:12:49.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd.c	2009-10-02 01:01:48.000000000 -0400
-@@ -278,6 +278,10 @@
+diff -ruBb binutils-2.24.90.20141014-orig/bfd/bfd.c binutils-2.24.90.20141014/bfd/bfd.c
+--- binutils-2.24.90.20141014-orig/bfd/bfd.c	2014-07-04 02:51:31.000000000 -0700
++++ binutils-2.24.90.20141014/bfd/bfd.c	2015-02-27 21:20:16.069835438 -0800
+@@ -200,6 +200,10 @@
+ .  {* Set if this is the linker output BFD.  *}
+ .  unsigned int is_linker_output : 1;
  .
- .  {* Set if this is a thin archive.  *}
- .  unsigned int is_thin_archive : 1;
-+.
 +.  {* Base offset, in bytes, of object inside a container file, such as FatELF,
 +.     or a Mach-O Universal Binary. This will be zero for most things. *}
 +.  ufile_ptr base_offset;
- .};
- .
- */
-diff -ru binutils-2.19.1-orig/bfd/bfd-in2.h binutils-2.19.1/bfd/bfd-in2.h
---- binutils-2.19.1-orig/bfd/bfd-in2.h	2008-08-20 19:28:57.000000000 -0400
-+++ binutils-2.19.1/bfd/bfd-in2.h	2009-10-02 01:01:48.000000000 -0400
-@@ -4823,6 +4823,10 @@
++.
+ .  {* Currently my_archive is tested before adding origin to
+ .     anything. I believe that this can become always an add of
+ .     origin, with origin set to 0 for non archive files.  *}
+diff -ruBb binutils-2.24.90.20141014-orig/bfd/bfd-in2.h binutils-2.24.90.20141014/bfd/bfd-in2.h
+--- binutils-2.24.90.20141014-orig/bfd/bfd-in2.h	2014-09-17 18:36:55.000000000 -0700
++++ binutils-2.24.90.20141014/bfd/bfd-in2.h	2015-02-27 21:18:57.193833087 -0800
+@@ -6430,6 +6430,10 @@
+   /* Set if this is the linker output BFD.  */
+   unsigned int is_linker_output : 1;
  
-   /* Set if this is a thin archive.  */
-   unsigned int is_thin_archive : 1;
-+
 +  /* Base offset, in bytes, of object inside a container file, such as FatELF,
 +     or a Mach-O Universal Binary. This will be zero for most things. */
 +  ufile_ptr base_offset;
- };
- 
- typedef enum bfd_error
-diff -ru binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
---- binutils-2.19.1-orig/bfd/bfdio.c	2008-02-20 12:42:35.000000000 -0500
-+++ binutils-2.19.1/bfd/bfdio.c	2009-10-02 01:01:48.000000000 -0400
-@@ -281,7 +281,7 @@
-       bim = abfd->iostream;
- 
-       if (direction == SEEK_SET)
--	abfd->where = position;
-+	abfd->where = position + abfd->base_offset;
-       else
- 	abfd->where += position;
- 
-@@ -337,6 +337,9 @@
-     }
++
+   /* Currently my_archive is tested before adding origin to
+      anything. I believe that this can become always an add of
+      origin, with origin set to 0 for non archive files.  */
+diff -ruBb binutils-2.24.90.20141014-orig/bfd/bfdio.c binutils-2.24.90.20141014/bfd/bfdio.c
+--- binutils-2.24.90.20141014-orig/bfd/bfdio.c	2014-03-26 01:28:52.000000000 -0700
++++ binutils-2.24.90.20141014/bfd/bfdio.c	2015-02-27 21:23:09.953840620 -0800
+@@ -311,6 +311,9 @@
  
    file_position = position;
-+  if (direction == SEEK_SET)
+   if (direction == SEEK_SET)
 +    file_position += abfd->base_offset;
 +
-   if (direction == SEEK_SET && abfd->my_archive != NULL)
-     file_position += abfd->origin;
++  if (direction == SEEK_SET)
+     {
+       bfd *parent_bfd = abfd;
  
-@@ -366,7 +369,7 @@
+@@ -347,7 +350,7 @@
      {
        /* Adjust `where' field.  */
        if (direction == SEEK_SET)
@@ -57,34 +48,23 @@ diff -ru binutils-2.19.1-orig/bfd/bfdio.c binutils-2.19.1/bfd/bfdio.c
        else
  	abfd->where += position;
      }
-diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
---- binutils-2.19.1-orig/bfd/elfcode.h	2009-10-02 15:47:18.000000000 -0400
-+++ binutils-2.19.1/bfd/elfcode.h	2009-10-02 15:16:51.000000000 -0400
-@@ -479,7 +479,6 @@
-    target vectors, most of which will not match.  We have to avoid leaving
-    any side effects in ABFD, or any data it points to (like tdata), if the
-    file does not match the target vector.  */
--
- const bfd_target *
- elf_object_p (bfd *abfd)
- {
-@@ -495,9 +494,14 @@
+diff -ruBb binutils-2.24.90.20141014-orig/bfd/elfcode.h binutils-2.24.90.20141014/bfd/elfcode.h
+--- binutils-2.24.90.20141014-orig/bfd/elfcode.h	2014-09-18 10:24:41.000000000 -0700
++++ binutils-2.24.90.20141014/bfd/elfcode.h	2015-02-27 21:24:25.753842879 -0800
+@@ -497,6 +496,12 @@
+   asection *s;
    bfd_size_type amt;
    const bfd_target *target;
-   const bfd_target * const *target_ptr;
--
 +  const FatElf_External_Hdr *x_fathdr = (FatElf_External_Hdr *) &x_ehdr;
 +  bfd_vma base_offset = 0;
-   preserve.marker = NULL;
- 
++
 +  ebd = get_elf_backend_data (abfd);
 +  if (ebd->s->arch_size != ARCH_SIZE)
 +    goto got_wrong_format_error;
-+
+ 
    /* Read in the ELF header in external format.  */
  
-   if (bfd_bread (&x_ehdr, sizeof (x_ehdr), abfd) != sizeof (x_ehdr))
-@@ -508,6 +512,102 @@
+@@ -508,6 +513,102 @@
  	goto got_no_match;
      }
  
@@ -187,7 +167,7 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Now check to see if we have a valid ELF file, and one that BFD can
       make use of.  The magic number must match, the address size ('class')
       and byte-swapping must match our XVEC entry, and it must have a
-@@ -573,10 +673,6 @@
+@@ -569,10 +670,6 @@
    if (i_ehdrp->e_shoff == 0 && i_ehdrp->e_shnum != 0)
      goto got_wrong_format_error;
  
@@ -198,10 +178,10 @@ diff -ru binutils-2.19.1-orig/bfd/elfcode.h binutils-2.19.1/bfd/elfcode.h
    /* Check that the ELF e_machine field matches what this particular
       BFD format expects.  */
    if (ebd->elf_machine_code != i_ehdrp->e_machine
-diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readelf.c
---- binutils-2.19.1-orig/binutils/readelf.c	2008-09-17 05:00:44.000000000 -0400
-+++ binutils-2.19.1/binutils/readelf.c	2009-10-02 01:01:49.000000000 -0400
-@@ -10957,6 +10957,98 @@
+diff -ruBb binutils-2.24.90.20141014-orig/binutils/readelf.c binutils-2.24.90.20141014/binutils/readelf.c
+--- binutils-2.24.90.20141014-orig/binutils/readelf.c	2014-10-14 02:28:42.000000000 -0700
++++ binutils-2.24.90.20141014/binutils/readelf.c	2015-02-27 21:38:05.901867322 -0800
+@@ -14839,6 +14839,98 @@
  }
  
  static int
@@ -297,10 +277,10 @@ diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readel
 +}
 +
 +static int
- process_file (char *file_name)
+ process_file (char * file_name)
  {
-   FILE *file;
-@@ -10994,7 +11086,12 @@
+   FILE * file;
+@@ -14876,7 +14968,12 @@
        return 1;
      }
  
@@ -311,12 +291,12 @@ diff -ru binutils-2.19.1-orig/binutils/readelf.c binutils-2.19.1/binutils/readel
 +      ret = process_fatelf (file_name, file);
 +    }
 +  else if (memcmp (armag, ARMAG, SARMAG) == 0)
-     ret = process_archive (file_name, file);
-   else
-     {
-diff -ru binutils-2.19.1-orig/elfcpp/elfcpp.h binutils-2.19.1/elfcpp/elfcpp.h
---- binutils-2.19.1-orig/elfcpp/elfcpp.h	2008-06-12 12:58:40.000000000 -0400
-+++ binutils-2.19.1/elfcpp/elfcpp.h	2009-10-02 01:01:49.000000000 -0400
+     ret = process_archive (file_name, file, FALSE);
+   else if (memcmp (armag, ARMAGT, SARMAG) == 0)
+     ret = process_archive (file_name, file, TRUE);
+diff -ruBb binutils-2.24.90.20141014-orig/elfcpp/elfcpp.h binutils-2.24.90.20141014/elfcpp/elfcpp.h
+--- binutils-2.24.90.20141014-orig/elfcpp/elfcpp.h	2014-07-31 04:27:10.000000000 -0700
++++ binutils-2.24.90.20141014/elfcpp/elfcpp.h	2015-02-27 21:17:46.449830979 -0800
 @@ -75,6 +75,40 @@
    typedef int64_t Elf_Swxword;
  };
@@ -358,12 +338,38 @@ diff -ru binutils-2.19.1-orig/elfcpp/elfcpp.h binutils-2.19.1/elfcpp/elfcpp.h
  // Offsets within the Ehdr e_ident field.
  
  const int EI_MAG0 = 0;
-diff -ru binutils-2.19.1-orig/gold/object.cc binutils-2.19.1/gold/object.cc
---- binutils-2.19.1-orig/gold/object.cc	2008-07-22 18:08:43.000000000 -0400
-+++ binutils-2.19.1/gold/object.cc	2009-10-02 01:01:49.000000000 -0400
-@@ -1824,6 +1824,98 @@
- namespace gold
- {
+diff -ruBb binutils-2.24.90.20141014-orig/gold/object.cc binutils-2.24.90.20141014/gold/object.cc
+--- binutils-2.24.90.20141014-orig/gold/object.cc	2014-09-30 15:26:28.000000000 -0700
++++ binutils-2.24.90.20141014/gold/object.cc	2015-02-27 21:45:55.013881304 -0800
+@@ -3099,12 +3099,124 @@
+ 
+   const unsigned char* p = input_file->file().get_view(offset, 0, want,
+ 						       true, false);
++
++  static const unsigned char fatelfmagic[4] =
++    {
++      elfcpp::FATELFMAG0, elfcpp::FATELFMAG1,
++      elfcpp::FATELFMAG2, elfcpp::FATELFMAG3
++    };
++
++  if ((want > 4) && (memcmp(p, fatelfmagic, 4) == 0))
++    {
++      // This is a FatELF file. Seek to correct ELF object now.
++      off_t base_offset = parse_fatelf_records(input_file->filename(),
++                                         input_file, p, want);
++      if (base_offset < 0)
++        return false;
++
++      // read the actual ELF header.
++      p = input_file->file().get_view(base_offset + offset, 0, want,
++                                      true, false);
++    }
++
+   *start = p;
+   *read_size = want;
+ 
+   return elfcpp::Elf_recognizer::is_elf_file(p, want);
+ }
  
 +static inline uint16_t fatelf_convert16(const unsigned char *buf)
 +{
@@ -460,12 +466,12 @@ diff -ru binutils-2.19.1-orig/gold/object.cc binutils-2.19.1/gold/object.cc
  // Read an ELF file and return the appropriate instance of Object.
  
  Object*
-diff -ru binutils-2.19.1-orig/gold/object.h binutils-2.19.1/gold/object.h
---- binutils-2.19.1-orig/gold/object.h	2008-07-25 00:25:49.000000000 -0400
-+++ binutils-2.19.1/gold/object.h	2009-10-02 01:01:49.000000000 -0400
-@@ -1808,6 +1808,15 @@
-   location(size_t relnum, off_t reloffset) const;
- };
+diff -ruBb binutils-2.24.90.20141014-orig/gold/object.h binutils-2.24.90.20141014/gold/object.h
+--- binutils-2.24.90.20141014-orig/gold/object.h	2014-09-03 13:39:34.000000000 -0700
++++ binutils-2.24.90.20141014/gold/object.h	2015-02-27 21:17:46.453830979 -0800
+@@ -2906,6 +2906,15 @@
+ is_elf_object(Input_file* input_file, off_t offset,
+ 	      const unsigned char** start, int* read_size);
  
 +// Parse a FatELF header, and return the base offset of the desired system's
 +//  ELF binary. Returns -1 on error, or if there isn't a compatible ELF object
@@ -477,57 +483,12 @@ diff -ru binutils-2.19.1-orig/gold/object.h binutils-2.19.1/gold/object.h
 +		const unsigned char* p, section_offset_type bytes);
 +
  // Return an Object appropriate for the input file.  P is BYTES long,
- // and holds the ELF header.
- 
-diff -ru binutils-2.19.1-orig/gold/readsyms.cc binutils-2.19.1/gold/readsyms.cc
---- binutils-2.19.1-orig/gold/readsyms.cc	2008-08-07 13:02:11.000000000 -0400
-+++ binutils-2.19.1/gold/readsyms.cc	2009-10-02 01:01:49.000000000 -0400
-@@ -161,17 +161,40 @@
- 
-   if (read_size >= 4)
-     {
-+      off_t base_offset = 0;
-+
-+      static unsigned char fatelfmagic[4] =
-+	{
-+	  elfcpp::FATELFMAG0, elfcpp::FATELFMAG1,
-+	  elfcpp::FATELFMAG2, elfcpp::FATELFMAG3
-+	};
-+
-+      if (memcmp(ehdr, fatelfmagic, 4) == 0)
-+	{
-+	  // This is a FatELF file. Seek to correct ELF object now.
-+	  base_offset = parse_fatelf_records(input_file->filename(),
-+	                                     input_file, ehdr, read_size);
-+	  if (base_offset < 0)
-+	    return false;
-+
-+	  // read the actual ELF header.
-+	  ehdr = input_file->file().get_view(base_offset, 0, read_size,
-+	                                     true, false);
-+	}
-+
-       static unsigned char elfmagic[4] =
- 	{
- 	  elfcpp::ELFMAG0, elfcpp::ELFMAG1,
- 	  elfcpp::ELFMAG2, elfcpp::ELFMAG3
- 	};
-+
-       if (memcmp(ehdr, elfmagic, 4) == 0)
- 	{
- 	  // This is an ELF object.
- 
- 	  Object* obj = make_elf_object(input_file->filename(),
--					input_file, 0, ehdr, read_size);
-+					input_file, base_offset, ehdr,
-+					read_size);
- 	  if (obj == NULL)
- 	    return false;
- 
-diff -ru binutils-2.19.1-orig/include/elf/external.h binutils-2.19.1/include/elf/external.h
---- binutils-2.19.1-orig/include/elf/external.h	2008-03-12 04:36:58.000000000 -0400
-+++ binutils-2.19.1/include/elf/external.h	2009-10-02 01:01:49.000000000 -0400
-@@ -285,4 +285,35 @@
+ // and holds the ELF header.  If PUNCONFIGURED is not NULL, then if
+ // this sees an object the linker is not configured to support, it
+diff -ruBb binutils-2.24.90.20141014-orig/include/elf/external.h binutils-2.24.90.20141014/include/elf/external.h
+--- binutils-2.24.90.20141014-orig/include/elf/external.h	2014-03-26 01:28:53.000000000 -0700
++++ binutils-2.24.90.20141014/include/elf/external.h	2015-02-27 21:17:46.453830979 -0800
+@@ -284,4 +284,35 @@
  
  #define GRP_ENTRY_SIZE		4
  
