@@ -26,9 +26,7 @@ Source code licensing information:
   kernel patch is GPLv2, the binutils patch is GPLv3, and the glibc patch is
   LGPL.
 
- The command line utilities (fatelf-glue, etc) are under the zlib license.
-  The text is available in LICENSE.txt, but it basically says "do whatever you
-  want with the code."
+ The command line utilities (fatelf-glue, etc) are public domain.
 
 
 Using FatELF as an end-user:
