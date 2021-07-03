@@ -1,0 +1,24 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    name: ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+        - { name: Linux,   os: ubuntu-20.04, flags: -GNinja }
+    steps:
+    - name: Setup Linux dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install cmake ninja-build
+    - name: Get fatelf sources
+      uses: actions/checkout@v2
+    - name: Configure CMake
+      run: cmake -B build ${{ matrix.platform.flags }}
+    - name: Build
+      run: cmake --build build/
