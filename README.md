@@ -111,7 +111,7 @@ If you're on a Debian or Ubuntu system, you can probably run this to prepare:
 Once you are ready, you should get the source code. If downloading via git,
 this command line should do:
 
-    git clone http://github.com/icculus/fatelf
+    git clone https://github.com/icculus/fatelf
 
 If you are using a source tarball, just extract it.
 
