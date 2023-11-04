@@ -1,40 +1,41 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-PROJECT(FatELF)
+cmake_minimum_required(VERSION 3.0.0)
+project(FatELF)
 
-EXECUTE_PROCESS(
-    COMMAND hg tip --template hg-{rev}:{node|short}
+execute_process(
+    COMMAND git rev-list HEAD~..
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE HGVERSION_RC
+    RESULT_VARIABLE GITVERSION_RC
     OUTPUT_VARIABLE FATELF_VERSION
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-IF(CMAKE_COMPILER_IS_GNUCC)
-    ADD_DEFINITIONS(-pipe -fsigned-char -Wall -Werror)
-ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-ADD_DEFINITIONS(-DAPPID=fatelf)
-ADD_DEFINITIONS(-DAPPREV="${FATELF_VERSION}")
+if(CMAKE_COMPILER_IS_GNUCC)
+    add_definitions(-pipe -fsigned-char -Wall -Werror)
+endif()
 
-INCLUDE_DIRECTORIES(include)
+add_definitions(-DAPPID=fatelf)
+add_definitions(-DAPPREV="${FATELF_VERSION}")
 
-ADD_LIBRARY(fatelf-utils STATIC utils/fatelf-utils.c)
+include_directories(include)
 
-MACRO(ADD_FATELF_EXECUTABLE _NAME)
-    ADD_EXECUTABLE(${_NAME} utils/${_NAME}.c)
-    TARGET_LINK_LIBRARIES(${_NAME} fatelf-utils)
-    INSTALL(TARGETS ${_NAME} RUNTIME DESTINATION bin)
-ENDMACRO(ADD_FATELF_EXECUTABLE)
+add_library(fatelf-utils STATIC utils/fatelf-utils.c)
 
-ADD_FATELF_EXECUTABLE(fatelf-glue)
-ADD_FATELF_EXECUTABLE(fatelf-info)
-ADD_FATELF_EXECUTABLE(fatelf-extract)
-ADD_FATELF_EXECUTABLE(fatelf-replace)
-ADD_FATELF_EXECUTABLE(fatelf-remove)
-ADD_FATELF_EXECUTABLE(fatelf-verify)
-ADD_FATELF_EXECUTABLE(fatelf-split)
-ADD_FATELF_EXECUTABLE(fatelf-validate)
+macro(add_fatelf_executable _NAME)
+    add_executable(${_NAME} utils/${_NAME}.c)
+    target_link_libraries(${_NAME} fatelf-utils)
+    install(TARGETS ${_NAME} RUNTIME DESTINATION bin)
+endmacro()
+
+add_fatelf_executable(fatelf-glue)
+add_fatelf_executable(fatelf-info)
+add_fatelf_executable(fatelf-extract)
+add_fatelf_executable(fatelf-replace)
+add_fatelf_executable(fatelf-remove)
+add_fatelf_executable(fatelf-verify)
+add_fatelf_executable(fatelf-split)
+add_fatelf_executable(fatelf-validate)
 
 # end of CMakeLists.txt ...
 
