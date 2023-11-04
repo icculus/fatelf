@@ -194,7 +194,7 @@ If `TARGET` is ambiguous, this operation fails.
     fatelf-replace OUTPUT INPUT NEWELF
 
 Replace an ELF binary in FatELF file `INPUT` with the one in file `NEWELF`,
-and write a new FatELF file with the replacment made. This tool figures
+and write a new FatELF file with the replacement made. This tool figures
 out which binary to replace by reading the headers in `NEWELF`.
 
 
